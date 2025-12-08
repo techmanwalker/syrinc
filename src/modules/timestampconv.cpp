@@ -6,10 +6,11 @@
 * @par ms_to_timestamp(1404350);
 */
 
-#include "../include/globals.hpp"
-#include "../include/modules/timestampconv.hpp"
+#include "globals.hpp"
+#include <cctype>
+#include "modules/timestampconv.hpp"
 
-// #include "../include/debug.hpp"
+// #include "debug.hpp"
 
 /**
 * @brief Separate the timestamp in mm:ss.ms
@@ -33,8 +34,6 @@ divide_timestamp (const std::string source)
 {
     tsmap ts;
 
-    // LOG("");
-
     if (!is_it_a_timestamp(source)) return ts;
 
     ts["mm"] = ts["ss"] = ts["ms"] = 0;
@@ -45,12 +44,6 @@ divide_timestamp (const std::string source)
     std::string minutes_component = source.substr(0, colon_pos);
     std::string seconds_component = source.substr(colon_pos + 1, source.length() - dot_pos - 1);
     std::string milliseconds_component = source.substr(dot_pos + 1, source.length() - dot_pos - 1);
-
-    /*
-    LOG(minutes_component);
-    LOG(seconds_component);
-    LOG(milliseconds_component);
-    */
 
     try {
         ts["mm"] = std::stol(minutes_component);
@@ -148,6 +141,28 @@ is_it_a_timestamp (const std::string source)
 
         if (i == ':') colon_count++;
         if (i == '.') dot_count++;
+    }
+
+    return colon_count == 1 && dot_count == 1;
+}
+
+/**
+* @brief Check if a string contains numbers only.
+*/
+bool
+is_numeric_only (const std::string source)
+{
+    // for "" it returns true as it can be treated as 0
+    for (int i = 0; i < source.length(); i++) {
+        if (!std::isdigit(source[i]) && source[i] != '.') {
+            // Allow the first char to be a minus sign
+            if (i == 0 && source[i] == '-') {
+                continue;
+            }
+            else {
+                return false;
+            }
+        }
     }
 
     return true;

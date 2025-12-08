@@ -1,7 +1,9 @@
 /**
 * @file correctlineoffset.cpp
+* 
 * @brief Foundation utilities to be able to analyze a lyric string
 * looking for timestamps and being able to correct them.
+*
 * @par correct_line_offset("[00:13.75] A lyric which should appear at second 15", -1250, false);
 * @par apply_offset_to_timestamp("00:12.33", -670");
 */
@@ -9,11 +11,9 @@
 #include <string>
 #include <vector>
 
-#include "../include/modules/correctlineoffset.hpp"
-#include "../include/modules/timestampconv.hpp"
-#include "../include/modules/tokens.hpp"
-
-// #include "../include/debug.hpp"
+#include "modules/correctlineoffset.hpp"
+#include "modules/timestampconv.hpp"
+#include "modules/tokens.hpp"
 
 /**
 * @brief Correct all the timestamps present in the line
@@ -42,7 +42,7 @@ correct_line_offset (const std::string source, const long offset, bool invert_di
     // We will overwrite on the fly and probably
     // we will accidentally format the line.
 
-    std::vector<std::string> line_tokens = tokenize_lyric_line(source);
+    std::vector<std::string> line_tokens = tokenize_line(source, true);
 
     // We will solely correct the timestamps here.
     for (int i = 0; i < line_tokens.size(); i++) {
@@ -51,7 +51,7 @@ correct_line_offset (const std::string source, const long offset, bool invert_di
         line_tokens[i] = apply_offset_to_timestamp(line_tokens[i], offset, invert_direction);
     }
 
-    return serialize_lyric_tokens(line_tokens);
+    return serialize_tokens(line_tokens, " ", true);
 }
 
 /**
@@ -80,7 +80,7 @@ apply_offset_to_timestamp (const std::string source, const long offset, bool inv
     if (!is_it_a_timestamp(source)) return source;
 
     long ts_in_ms = timestamp_to_ms(source);
-    // LOG(ts_in_ms);
+    
     ts_in_ms -= (offset * (invert_direction ? -1 : 1));
 
     // prevent from going below zero
