@@ -54,6 +54,7 @@ void TEST_ms_to_timestamp()
     run(123456);
     run(-565);   // negative → clamped to 0 internally
     run(-89);
+    run(-65536);
     run(65536);
 }
 
@@ -72,6 +73,8 @@ void TEST_timestamp_to_ms()
     run("12:34.56");
     run("65:13.27");
     run("23:24.35");
+    run("-12:34.56");
+    run("-65:55.36");
 
     /* a few more inferred cases */
     run("00:00.01");   // 10 ms
@@ -118,7 +121,8 @@ void TEST_round_trip()
     /* extra VALID mm:ss.cs strings ---------------------------------------- */
     const vector<string> ts_vals = {
         "00:00.00", "00:00.01", "00:10.00", "01:00.00",
-        "12:34.56", "65:13.27", "99:59.99"
+        "12:34.56", "65:13.27", "99:59.99", "-65:55.36",
+        "-23:24.35"
     };
     for (const string& s : ts_vals) test(timestamp_to_ms(s), s, true);
 
@@ -297,8 +301,8 @@ void TEST_process_lyrics_vector()
 [03:15.71]And she faded in the deep and murky water below)", "correctoffset invertoffset");
 
     /* INPUT 3 ----------------------------------------------------------------- */
-    run(R"([offset: 250]
-[03:04.20]And I was running far away
+    run(R"([offset: -250]
+[-00:00.12]And I was running far away
 [03:06.40]Would I run off the world someday?
 [03:09.00]But now take me home
 [03:10.50]Take me home where I belong

@@ -7,6 +7,7 @@
 * 
 */
 
+#include <algorithm>
 #include <cctype>
 #include <string>
 #include <vector>
@@ -223,50 +224,15 @@ slice_at_character (const std::string source, char joint)
     return slicen;
 }
 
-std::string
-trim_string (const std::string source)
+std::string trim_string(std::string s)
 {
-    std::string s = source;
-    
-    size_t first_non_space_index = 0;
-    size_t last_non_space_index = 0;
-
-    // find first non space
-    for (size_t i = 0; i < source.length(); i++) {
-        if (! ::isspace(source[i])) {
-            first_non_space_index = i;
-            break;
-        }
-        else
-            if (i == source.length() - 1) {
-                // just as a safeguard to not crash on empty strings
-                first_non_space_index = i;
-                break;
-            } else {
-                continue;
-            }
-    }
-
-    // find last non space
-    for (size_t i = source.length() - 1; i >= 0; i--) {
-        if (! ::isspace(source[i])) {
-            last_non_space_index = i;
-            break;
-        }
-        else
-            if (i == 0) {
-                // just as a safeguard to not crash on empty strings
-                last_non_space_index = 0;
-                break;
-            } else {
-                continue;
-            }
-    }
-
-    // just in case it ever happens
-    if (first_non_space_index >= last_non_space_index) return "";
-
-    // Perform the cut and return
-    return 
-        source.substr(first_non_space_index, last_non_space_index + 1);
+    // left trim
+    s.erase(s.begin(),
+            std::find_if_not(s.begin(), s.end(),
+                             [](unsigned char c){ return std::isspace(c); }));
+    // right trim
+    s.erase(std::find_if_not(s.rbegin(), s.rend(),
+                             [](unsigned char c){ return std::isspace(c); }).base(),
+            s.end());
+    return s;
 }

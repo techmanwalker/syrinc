@@ -11,7 +11,8 @@
 *
 */
 struct tsmap {
-    long mm;
-    long ss;
-    long cs;
+    bool is_negative;
+    unsigned long mm;
+    unsigned long ss;
+    unsigned long cs;
 };

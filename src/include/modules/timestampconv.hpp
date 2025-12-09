@@ -11,7 +11,7 @@ long
 timestamp_to_ms (const std::string source);
 
 std::string
-ms_to_timestamp (const long source, bool no_filling = false);
+ms_to_timestamp (const long source, bool no_filling = false, bool zero_negative_timestamps = false);
 
 bool
 is_it_a_timestamp (const std::string source);

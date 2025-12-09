@@ -7,7 +7,9 @@
 */
 
 #include "globals.hpp"
+#include <algorithm>
 #include <cctype>
+#include <string>
 #include "modules/timestampconv.hpp"
 
 // #include "debug.hpp"
@@ -42,18 +44,24 @@ divide_timestamp (const std::string source)
     int colon_pos = source.find_first_of(':');
     int dot_pos = source.find_first_of('.');
 
-    std::string minutes_component = source.substr(0, colon_pos);
+    /* is_it_a_timestamp requires : and . to be
+    present to pass, so no need to verify it
+    again
+    */
+
+    bool is_negative = source[0] == '-';
+
+    std::string minutes_component = source.substr((is_negative ? 1 : 0), colon_pos);
     std::string seconds_component = source.substr(colon_pos + 1, source.length() - dot_pos - 1);
     std::string centiseconds_component = source.substr(dot_pos + 1, source.length() - dot_pos - 1);
 
-    try {
-        ts.mm = std::stol(minutes_component);
-        ts.ss = std::stol(seconds_component);
-        ts.cs = std::stol(centiseconds_component) * 10; // centiseconds → milliseconds
-    } catch (...) {
-        // any conversion failure → return empty map
-    }
-    // the milliseconds component is actually centiseconds, not ms
+    // the check of the components being all numeric
+    // was already done by is_it_a_timestamp, so
+    // no need of a try-catch here
+    ts.is_negative = is_negative;
+    ts.mm = std::stol(minutes_component);
+    ts.ss = std::stol(seconds_component);
+    ts.cs = std::stol(centiseconds_component);
 
     return ts;
 }
@@ -68,9 +76,11 @@ timestamp_to_ms (const std::string source)
     // Convert all the units to ms and sum them together
 
     return
+    (
         ts.mm * 60000
     +   ts.ss * 1000
-    +   ts.cs;
+    +   ts.cs * 10
+    ) * (ts.is_negative ? -1 : 1);
 }
 
 /**
@@ -85,14 +95,21 @@ timestamp_to_ms (const std::string source)
 * @param no_filling do not pad the resulting string with leading zeroes
 */
 std::string
-ms_to_timestamp (const long source, bool no_filling)
+ms_to_timestamp (const long source, bool no_filling, bool zero_negative_timestamps)
 {
     tsmap ts;
+    ts.mm = ts.ss = ts.cs = 0;
     long remaining_ms = source;
     bool is_source_negative = false;
     if (remaining_ms < 0) {
-        remaining_ms *= -1;
-        is_source_negative = true;
+        // Round negative timestamps up to zero if needed
+        if (!zero_negative_timestamps) {
+            remaining_ms *= -1;
+            is_source_negative = true;
+        } else
+            // just return a zeroed timestamp, no need to
+            // manually convert
+            return "00:00.00";
     }
 
     // Progressive reduction, bigger units first
@@ -118,33 +135,33 @@ bool
 is_it_a_timestamp (const std::string source)
 {
     if (source.empty()) return false;
-    int colon_count = 0;
-    int dot_count = 0;
 
-    for (char i : source) {
+    bool is_negative = source[0] == '-';
+
+    // count colons and dots
+    int colon_count = std::count(source.begin(), source.end(), ':');
+    int dot_count = std::count(source.begin(), source.end(), '.');
+
+
+    // It is a malformed timestamp if it doesn't contain
+    // exactly 1 : and 1 .
+    if (colon_count != 1 || dot_count != 1)
+        return false;
+
+    // allowing the first char to be a minus sign
+    for (int i = (is_negative ? 1 : 0); i < source.length(); i++) {
         if (
             ! (
-                std::isdigit(i)
-            ||  i == ':'
-            ||  i == '.'
+                std::isdigit(source[i])
+            ||  source[i] == ':'
+            ||  source[i] == '.'
             )
-
-            || (
-                dot_count > colon_count
-            )
-
-            || (
-                dot_count > 1
-            ||  colon_count > 1
-            )
-        )
+        ) {
             return false;
-
-        if (i == ':') colon_count++;
-        if (i == '.') dot_count++;
+        }
     }
 
-    return colon_count == 1 && dot_count == 1;
+    return true;
 }
 
 /**
