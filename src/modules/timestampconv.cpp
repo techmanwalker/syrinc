@@ -13,7 +13,8 @@
 // #include "debug.hpp"
 
 /**
-* @brief Separate the timestamp in mm:ss.ms
+* @brief Separate the timestamp from mm:ss.cs
+* to mm, ss, ms format.
 *
 * @param source timestamp to be split.
 *
@@ -25,8 +26,8 @@
 * tsmap ts = divide_timestamp("12:34.56");
 * @endcode
 *
-* @return the source timestamp as a map with
-* mm, ss and ms members representing the
+* @return the source timestamp as a struct with
+* mm, ss and cs members representing the
 * original source duration.
 */
 tsmap
@@ -36,21 +37,21 @@ divide_timestamp (const std::string source)
 
     if (!is_it_a_timestamp(source)) return ts;
 
-    ts["mm"] = ts["ss"] = ts["ms"] = 0;
+    ts.mm = ts.ss = ts.cs = 0;
 
     int colon_pos = source.find_first_of(':');
     int dot_pos = source.find_first_of('.');
 
     std::string minutes_component = source.substr(0, colon_pos);
     std::string seconds_component = source.substr(colon_pos + 1, source.length() - dot_pos - 1);
-    std::string milliseconds_component = source.substr(dot_pos + 1, source.length() - dot_pos - 1);
+    std::string centiseconds_component = source.substr(dot_pos + 1, source.length() - dot_pos - 1);
 
     try {
-        ts["mm"] = std::stol(minutes_component);
-        ts["ss"] = std::stol(seconds_component);
-        ts["ms"] = std::stol(milliseconds_component) * 10; // centiseconds → milliseconds
+        ts.mm = std::stol(minutes_component);
+        ts.ss = std::stol(seconds_component);
+        ts.cs = std::stol(centiseconds_component) * 10; // centiseconds → milliseconds
     } catch (...) {
-        ts.clear();        // any conversion failure → return empty map
+        // any conversion failure → return empty map
     }
     // the milliseconds component is actually centiseconds, not ms
 
@@ -67,9 +68,9 @@ timestamp_to_ms (const std::string source)
     // Convert all the units to ms and sum them together
 
     return
-        ts["mm"] * 60000
-    +   ts["ss"] * 1000
-    +   ts["ms"];
+        ts.mm * 60000
+    +   ts.ss * 1000
+    +   ts.cs;
 }
 
 /**
@@ -96,15 +97,15 @@ ms_to_timestamp (const long source, bool no_filling)
 
     // Progressive reduction, bigger units first
 
-    ts["mm"] = remaining_ms / 60000; remaining_ms -= ts["mm"] * 60000;
-    ts["ss"] = remaining_ms / 1000; remaining_ms -= ts["ss"] * 1000;
-    ts["ms"] = remaining_ms / 10;
+    ts.mm = remaining_ms / 60000; remaining_ms -= ts.mm * 60000;
+    ts.ss = remaining_ms / 1000; remaining_ms -= ts.ss * 1000;
+    ts.cs = remaining_ms / 10;
 
     return // with filling if needed
         std::string(is_source_negative ? "-" : "")
-    +   (ts["mm"] < 10 ? "0" : "") + std::to_string(ts["mm"]) + ":"
-    +   (ts["ss"] < 10 ? "0" : "") + std::to_string(ts["ss"]) + "."
-    +   (ts["ms"] < 10 ? "0" : "") + std::to_string(ts["ms"]);
+    +   (ts.mm < 10 ? "0" : "") + std::to_string(ts.mm) + ":"
+    +   (ts.ss < 10 ? "0" : "") + std::to_string(ts.ss) + "."
+    +   (ts.cs < 10 ? "0" : "") + std::to_string(ts.cs);
 }
 
 /**

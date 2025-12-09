@@ -26,8 +26,8 @@ void TEST_divide_timestamp()
     cout << "\n===== divide_timestamp =====\n";
     auto run = [](const string& s){
         tsmap m = divide_timestamp(s);
-        cout << s << "  ->  mm=" << m["mm"]
-             << " ss=" << m["ss"] << " ms=" << m["ms"] << "\n";
+        cout << s << "  ->  mm=" << m.mm
+             << " ss=" << m.ss << " cs=" << m.cs << "\n";
     };
     run("00:00.10");
     run("12:34.56");
