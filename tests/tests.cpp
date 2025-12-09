@@ -81,6 +81,55 @@ void TEST_timestamp_to_ms()
     run("invalid");    // should return 0
 }
 
+/* ---------- round-trip test (centisecond precision) -------------------- */
+void TEST_round_trip()
+{
+    cout << "\n===== round-trip (ms ↔ timestamp) =====\n";
+
+    /*  Due to the way LRC timestamp are structured, there's no way
+    *   to preserve the millisecond in the magnitude of the unit,
+    *   so 12345x where x is the magnitude from 0 to 9 will be lost
+    *   in all cases. This is a necessary compromise.
+    */
+
+    /* helper: tolerate centisecond truncation -------------- */
+    auto truncated = [](long ms) { return (ms / 10) * 10; };
+
+    auto test = [&](long ms, const string& ts, bool expect_equal){
+        long   ms_back  = timestamp_to_ms(ts);
+        string ts_back  = ms_to_timestamp(ms);
+
+        bool ok_ms = (ms_back == truncated(ms));   // last digit forced to 0
+        bool ok_ts = (ts == ts_back);
+        bool ok    = ok_ms && ok_ts;
+
+        cout << "ms=" << ms << "  ts=\"" << ts << "\"  "
+             << "ms_back=" << ms_back << "  ts_back=\"" << ts_back << "\"  "
+             << (ok ? "PASS" : "FAIL") << '\n';
+    };
+
+    /* VALID cases – must round-trip perfectly after truncation ------------- */
+    const vector<long> ms_vals = {
+        0, 10, 100, 1000, 10'000, 60'000, 123'450,   // already 0-ended
+        123'456, 65000, 3'600'000, 3'659'990
+    };
+    for (long v : ms_vals) test(v, ms_to_timestamp(v), true);
+
+    /* extra VALID mm:ss.cs strings ---------------------------------------- */
+    const vector<string> ts_vals = {
+        "00:00.00", "00:00.01", "00:10.00", "01:00.00",
+        "12:34.56", "65:13.27", "99:59.99"
+    };
+    for (const string& s : ts_vals) test(timestamp_to_ms(s), s, true);
+
+    /* INVALID strings – only check they don’t crash ----------------------- */
+    const vector<string> bad = { "abc", "12-34.56", "", "250" };
+    for (const string& s : bad){
+        long ms_bad = timestamp_to_ms(s);
+        cout << "invalid ts=\"" << s << "\"  ms=" << ms_bad << '\n';
+    }
+}
+
 /* ---------- is_it_a_timestamp ---------- */
 void TEST_is_it_a_timestamp()
 {
@@ -283,6 +332,7 @@ int main()
     TEST_divide_timestamp();
     TEST_ms_to_timestamp();
     TEST_timestamp_to_ms();
+    TEST_round_trip();
     TEST_tokenize_lyric_line();
     TEST_serialize_lyric_tokens();
     TEST_apply_offset_to_timestamp();
