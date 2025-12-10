@@ -172,6 +172,10 @@ void TEST_tokenize_lyric_line()
     run("[00:10:05] This is a lyric line");
     run("[12:34 This is a malformed line but should come fine anyway");
     run("<The jo>b of this function is to split by spaces or [these ]signs");
+    run("[offset:500][ti: Song] This line contains <lots> of metadata");
+    run("[ti: Ella][ar:Junior H] [00:00:00] Y una bolsita");
+    run("[of:-150] Si de mí todo entregué y siempre me han pagado mal");
+    run("[ti: Ella][ar:Junior H] [00:00:00] Y una bolsita");
 }
 
 /* ---------- serialize_lyric_tokens ---------- */
@@ -210,6 +214,8 @@ void TEST_apply_offset_to_timestamp()
     run("00:00.00", off);
     run("00:59.99", off);
     run("99:59.99", off);
+    run("123:456.789", off);
+    run("04:32.227", off);
 }
 
 /* ---------- correct_line_offset ---------- */
@@ -253,6 +259,34 @@ void TEST_read_tags_from_line()
     run("no brackets at all");       // plain text
     run("[malformed");               // missing closing
     run("[re:Replay:Extra]");        // colon inside value
+}
+
+/* ---------- pop_tag ---------- */
+void TEST_pop_tag()
+{
+    cout << "\n===== pop_tag =====\n";
+    auto run = [](const string& src, const string& key){
+        string out = pop_tag(src, key);
+        PRINT("pop_tag(" + key + ")", src, out);
+        std::cout << std::endl;
+    };
+
+    /* basic -------------------------------------------------------------- */
+    run(R"([offset: 500] I walk the line)", "offset");
+    run(R"([of:-150] Si de mí todo entregué y siempre me han pagado mal)", "of");
+
+    /* multi-tag line ----------------------------------------------------- */
+    string multi = R"([ti: Ella][ar:Junior H] [00:00.00] Y una bolsita)";
+    run(multi, "ti");               // first pop
+    run(multi, "ar");               // second pop
+    run(multi, "00:00.00");         // pop timestamp
+
+    /* edge / extreme ----------------------------------------------------- */
+    run(R"(plain text no brackets)", "offset");     // nothing to pop
+    run(R"([key) malformed)", "key");               // missing closing ]
+    run(R"([] empty key)", "");                     // empty tag
+    run(R"([repeat:repeat][repeat:repeat] double)", "repeat"); // first occurrence removed
+    run(R"([space :  after] space test)", "space");// spaces inside tag
 }
 
 /* ---------- helpers ---------- */
@@ -302,7 +336,7 @@ void TEST_process_lyrics_vector()
 
     /* INPUT 3 ----------------------------------------------------------------- */
     run(R"([offset: -250]
-[-00:00.12]And I was running far away
+[-00:00.14]And I was running far away
 [03:06.40]Would I run off the world someday?
 [03:09.00]But now take me home
 [03:10.50]Take me home where I belong
@@ -342,6 +376,7 @@ int main()
     TEST_apply_offset_to_timestamp();
     TEST_correct_line_offset();
     TEST_read_tags_from_line();
+    TEST_pop_tag();
     TEST_process_lyrics_vector();
     TEST_process_lyrics_file();
     return 0;

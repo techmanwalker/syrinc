@@ -17,3 +17,6 @@ trim_string (const std::string source);
 
 std::pair<std::string, std::string>
 slice_at_character (const std::string source, char joint = ' ');
+
+std::string
+pop_tag (std::string source, std::string key);

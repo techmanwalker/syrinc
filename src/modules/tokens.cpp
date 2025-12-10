@@ -12,6 +12,8 @@
 #include <string>
 #include <vector>
 
+#include "debug.hpp"
+
 #include "modules/timestampconv.hpp"
 #include "modules/tokens.hpp"
 
@@ -95,10 +97,12 @@ serialize_tokens (const std::vector<std::string> token_vector, std::string joint
         // Lyric lines need their own special treatment. So,
         // If the previous was an opening tag character
         // or the current is a closing one...
+        // don't write a space AT THIS EXACT POSITION
         if (
             (
                 token_vector[i - 1] == "[" || token_vector[i] == "]"
             ||  token_vector[i - 1] == "<" || token_vector[i] == ">"
+            ||  token_vector[i]     == ":"
             ) && treat_as_lyrics_line
         )
             dont_write_joint = true;
@@ -193,6 +197,111 @@ read_tags_from_line (const std::string source)
     }
 
     return found_tags;
+}
+
+std::string
+pop_tag (std::string source, std::string key) {
+    std::vector<std::string> tokenized_source = tokenize_line(source, true);
+
+    unsigned long key_index_in_vector = std::string::npos;
+    unsigned long opening_bracket_index = 0;
+    unsigned long closing_bracket_index = std::string::npos;
+
+    bool will_need_to_repeat = false;
+
+    /* DEBUG */
+    for (std::string i : tokenized_source) {
+        LOG(i, "a token from pop_tag");
+    }
+    
+
+    // find in vector
+    // start right at 1 because there's no way to
+    // have a tag already opened by a [ in index
+    // below zero, it's absurd
+    for (long i = 0; i < tokenized_source.size(); i++) {
+        if (tokenized_source[i].find(key) != std::string::npos) {
+
+            /* DEBUG*/
+            std::string safe = tokenized_source[i];
+            if (safe == "[") safe = "OPEN";
+            if (safe == "]") safe = "CLOSE";
+            LOG("token " + std::to_string(i) + " {" + safe + "} is the actual correct tag marker.");
+        
+            if (key_index_in_vector == std::string::npos) 
+                // the tag is present here
+                key_index_in_vector = i;
+            else
+                // This means that we've been here before
+                // so there are multiple tags with this key
+                // in this line.
+                will_need_to_repeat = true;
+        }
+        else {
+            /* DEBUG */
+            std::string safe = tokenized_source[i];
+            if (safe == "[") safe = "OPEN";
+            if (safe == "]") safe = "CLOSE";
+            LOG("token " + std::to_string(i) + " {" + safe + "} is not the correct tag marker.");
+        }
+    }
+
+    // If the key was never found, return as-is
+    if (key_index_in_vector == std::string::npos) return source;
+
+    // find left brace
+    for (long i = key_index_in_vector; i >= 0; i--) {
+        if (tokenized_source[i] == "[") {
+            opening_bracket_index = i;
+            break;
+        }
+    }
+
+    // find right brace
+    for (long i = key_index_in_vector; i < tokenized_source.size(); i++) {
+        if (tokenized_source[i] == "]") {
+            closing_bracket_index = i;
+            break;
+        }
+    }
+
+    // If matching brackets were not found
+    if (
+        // if index 0 is not actually a brace
+        opening_bracket_index == 0 && tokenized_source[0] != "["
+    ||  closing_bracket_index == std::string::npos
+    ||  opening_bracket_index >= tokenized_source.size()
+    ||  closing_bracket_index >= tokenized_source.size()
+    ||  opening_bracket_index > closing_bracket_index
+    ) {
+        return source; // as-is
+    }
+
+    // once the indices are found, we'll clip out
+    // whatever is not part of the tag we want to pop
+    
+    LOG(std::to_string(key_index_in_vector), "key index in vector");
+    LOG(std::to_string(opening_bracket_index), "opening bracket index");
+    LOG(std::to_string(closing_bracket_index), "closing bracket index");
+
+    // part before the opening bracket
+    std::vector<std::string> lpart (
+        tokenized_source.begin(),
+        tokenized_source.begin() + opening_bracket_index);
+
+    std::vector<std::string> rpart (
+        tokenized_source.begin() + closing_bracket_index + 1,
+        tokenized_source.end()
+    );
+
+    // concatenate
+    lpart.insert(lpart.end(), rpart.begin(), rpart.end());
+
+    std::string out = serialize_tokens(lpart, " ", true);
+
+    if (will_need_to_repeat) out = pop_tag(out, key);
+
+    return out;
 }
 
 /**

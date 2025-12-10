@@ -5,7 +5,7 @@
 #include "globals.hpp"
 
 tsmap
-divide_timestamp (const std::string source);
+divide_timestamp (const std::string source, bool disable_warning = false);
 
 long
 timestamp_to_ms (const std::string source);

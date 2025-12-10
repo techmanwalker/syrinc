@@ -103,7 +103,7 @@ process_lyrics (const filelines lyrics, const std::string options)
         // look for an "offset" tag in the current line
         for (const auto& [key, value] : tags)
         {
-            if (key == "offset")
+            if ((key == "offset") || (key == "of"))
             {
                 if (!value.empty() && is_numeric_only(value)) {
                     offset = (!overrideoffset ? std::stol(value) : offset);   // update running offset
@@ -116,10 +116,14 @@ process_lyrics (const filelines lyrics, const std::string options)
             }
         }
 
-        // skip this line to avoid double accidental correction
-        if (does_this_line_have_an_offset_tag) continue;
-
         std::string processed_line = i;
+
+        // Don't accidentally take away metadata or lyrics but rather
+        // remove the offset tag
+        if (does_this_line_have_an_offset_tag) processed_line = pop_tag(processed_line, "of");
+
+        // Pop empty lines as well
+        if (trim_string(processed_line) == "") continue;
 
         if (correctoffset)
             processed_line = correct_line_offset(processed_line, offset, invertoffset);

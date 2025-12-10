@@ -9,6 +9,7 @@
 #include "globals.hpp"
 #include <algorithm>
 #include <cctype>
+#include <iostream>
 #include <string>
 #include "modules/timestampconv.hpp"
 
@@ -33,7 +34,7 @@
 * original source duration.
 */
 tsmap
-divide_timestamp (const std::string source)
+divide_timestamp (const std::string source, bool disable_warning)
 {
     tsmap ts;
 
@@ -62,6 +63,27 @@ divide_timestamp (const std::string source)
     ts.mm = std::stol(minutes_component);
     ts.ss = std::stol(seconds_component);
     ts.cs = std::stol(centiseconds_component);
+
+    // Everybody could make mistakes with formatting
+    // so I'll be forgiving by performing a round-trip
+    // that will automatically balance the lenghts
+
+    if (
+        ts.ss >= 60
+    ||  ts.cs >= 100
+    ) {
+        std::string roundtrip_ts = ms_to_timestamp(
+            (ts.mm * 60000)
+            + (ts.ss * 1000)
+            + (ts.cs * 10)
+        );
+
+        ts = divide_timestamp(roundtrip_ts);
+
+        if (!disable_warning)
+            // obviously will show a warning
+            std::cerr << "warning: " + source + " timestamp is malformed; will round up to " + roundtrip_ts + "...";
+    }
 
     return ts;
 }

@@ -3,6 +3,9 @@ project(syrinc)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(CXXOPTS REQUIRED cxxopts>=2.0)
+
 # ---- default BUILD_TESTS to ON when Debug ----
 if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT DEFINED BUILD_TESTS)
   set(BUILD_TESTS ON CACHE BOOL "Build test executable" FORCE)

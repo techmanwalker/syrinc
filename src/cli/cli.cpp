@@ -2,8 +2,9 @@
 #include <iostream>
 #include <string>
 
-#include "../include/modules/lrcfilerewriter.hpp"
-#include "../include/modules/tokens.hpp"
+#include "modules/lrcfilerewriter.hpp"
+#include "modules/timestampconv.hpp"
+#include "modules/tokens.hpp"
 
 int main(int argc, char** argv)
 {
@@ -11,7 +12,7 @@ int main(int argc, char** argv)
 
     opt.add_options()
         ("f,file",      "input .lrc file",  cxxopts::value<std::string>())
-        ("o,offset",    "override offset, in ms",     cxxopts::value<long>()->default_value("0"))
+        ("o,offset", "override offset, in ms", cxxopts::value<std::vector<std::string>>())
         ("i,invert",    "invert offset sign")
         ("h,help",      "print usage");
 
@@ -25,8 +26,14 @@ int main(int argc, char** argv)
 
     /* ----- JSON-like retrieval ----- */
     std::string file   = result["file"].as<std::string>();
-    long        offset = result["offset"].as<long>();
+    long        offset = 0; // will retrieve just next
     bool        invert = result["invert"].as<bool>();
+
+    if (result.count("offset")) {
+        auto v = result["offset"].as<std::vector<std::string>>();
+        if (v.empty() || v[0].empty() || !is_numeric_only(v[0]))
+            offset = std::stol(v[0]);
+    }
 
     if (!file.empty())
         std::cout <<
