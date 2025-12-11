@@ -10,39 +10,39 @@
 
 /* ---------- scalars ---------- */
 inline void LOG(long v,               const std::string& lvl = "info") {
-    if(!lvl.empty()) std::cout << lvl << ": ";
-    std::cout << v << '\n';
+    if(!lvl.empty()) std::cerr << lvl << ": ";
+    std::cerr << v << '\n';
 }
 inline void LOG(int v,                const std::string& lvl = "info") {
-    if(!lvl.empty()) std::cout << lvl << ": ";
-    std::cout << v << '\n';
+    if(!lvl.empty()) std::cerr << lvl << ": ";
+    std::cerr << v << '\n';
 }
 inline void LOG(double v,             const std::string& lvl = "info") {
-    if(!lvl.empty()) std::cout << lvl << ": ";
-    std::cout << v << '\n';
+    if(!lvl.empty()) std::cerr << lvl << ": ";
+    std::cerr << v << '\n';
 }
 inline void LOG(const std::string& v, const std::string& lvl = "info") {
-    if(v.empty()) { std::cout << '\n'; return; }
-    if(!lvl.empty()) std::cout << lvl << ": ";
-    std::cout << v << '\n';
+    if(v.empty()) { std::cerr << '\n'; return; }
+    if(!lvl.empty()) std::cerr << lvl << ": ";
+    std::cerr << v << '\n';
 }
 
 
 /* ---------- vector<T> ---------- */
 template <typename T>
 void LOG(const std::vector<T>& v, const std::string& lvl = "info") {
-    if(!lvl.empty()) std::cout << lvl << ": ";
-    std::cout << '{';
+    if(!lvl.empty()) std::cerr << lvl << ": ";
+    std::cerr << '{';
     for(std::size_t i = 0; i < v.size(); ++i) {
-        std::cout << v[i];
-        if(i + 1 != v.size()) std::cout << ", ";
+        std::cerr << v[i];
+        if(i + 1 != v.size()) std::cerr << ", ";
     }
-    std::cout << "}\n";
+    std::cerr << "}\n";
 }
 
 
 /* ---------- variadic plain overloads (optional) ---------- */
-//inline void LOG(const std::string& lvl) { if(!lvl.empty()) std::cout << lvl << ": "; std::cout << '\n'; }
+//inline void LOG(const std::string& lvl) { if(!lvl.empty()) std::cerr << lvl << ": "; std::cerr << '\n'; }
 
 #else 
 

@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 project(syrinc)
 
+set(CMAKE_CXX_STANDARD 20) # Set the desired C++ standard (e.g., 11, 14, 17, 20, 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON) # Ensure the compiler supports the specified standard
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(PkgConfig REQUIRED)

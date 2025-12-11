@@ -12,8 +12,6 @@
 #include <string>
 #include <vector>
 
-#include "debug.hpp"
-
 #include "modules/timestampconv.hpp"
 #include "modules/tokens.hpp"
 
@@ -199,6 +197,18 @@ read_tags_from_line (const std::string source)
     return found_tags;
 }
 
+/**
+* @brief Pop out an .lrc tag with such key
+*
+* This function looks for the tag with such key, finds its opening
+* and closing square brackets, and clips out the content outside of
+* the bracket-enclosed space.
+*
+* @param source the lyric line with the key to remove
+* @param key key tag to remove
+*
+* @return source line without such keyed tag
+*/
 std::string
 pop_tag (std::string source, std::string key) {
     std::vector<std::string> tokenized_source = tokenize_line(source, true);
@@ -209,10 +219,11 @@ pop_tag (std::string source, std::string key) {
 
     bool will_need_to_repeat = false;
 
-    /* DEBUG */
+    /* DEBUG
     for (std::string i : tokenized_source) {
         LOG(i, "a token from pop_tag");
     }
+    */
     
 
     // find in vector
@@ -222,11 +233,12 @@ pop_tag (std::string source, std::string key) {
     for (long i = 0; i < tokenized_source.size(); i++) {
         if (tokenized_source[i].find(key) != std::string::npos) {
 
-            /* DEBUG*/
+            /* DEBUG
             std::string safe = tokenized_source[i];
             if (safe == "[") safe = "OPEN";
             if (safe == "]") safe = "CLOSE";
             LOG("token " + std::to_string(i) + " {" + safe + "} is the actual correct tag marker.");
+            */
         
             if (key_index_in_vector == std::string::npos) 
                 // the tag is present here
@@ -237,13 +249,15 @@ pop_tag (std::string source, std::string key) {
                 // in this line.
                 will_need_to_repeat = true;
         }
+        /* DEBUG 
         else {
-            /* DEBUG */
+            
             std::string safe = tokenized_source[i];
             if (safe == "[") safe = "OPEN";
             if (safe == "]") safe = "CLOSE";
             LOG("token " + std::to_string(i) + " {" + safe + "} is not the correct tag marker.");
         }
+        */
     }
 
     // If the key was never found, return as-is
@@ -276,13 +290,14 @@ pop_tag (std::string source, std::string key) {
     ) {
         return source; // as-is
     }
-
-    // once the indices are found, we'll clip out
-    // whatever is not part of the tag we want to pop
-    
+    /* DEBUG
     LOG(std::to_string(key_index_in_vector), "key index in vector");
     LOG(std::to_string(opening_bracket_index), "opening bracket index");
     LOG(std::to_string(closing_bracket_index), "closing bracket index");
+    */
+
+    // once the indices are found, we'll clip out
+    // whatever is not part of the tag we want to pop
 
     // part before the opening bracket
     std::vector<std::string> lpart (
@@ -293,6 +308,18 @@ pop_tag (std::string source, std::string key) {
         tokenized_source.begin() + closing_bracket_index + 1,
         tokenized_source.end()
     );
+    // we'll need this to validate what we just did
+    std::vector<std::string> thepart (
+        tokenized_source.begin() + opening_bracket_index,
+        tokenized_source.begin() + closing_bracket_index
+    );
+
+    // ONLY pop this if the occurence is actually part of the key
+    std::string thepart_serialized = serialize_tokens(thepart);
+    int thepart_colon_index = thepart_serialized.find(':');
+    if (thepart_colon_index != std::string::npos)
+        if (thepart_serialized.substr(0, thepart_colon_index).find(key) == std::string::npos)
+            return source;
 
     // concatenate
     lpart.insert(lpart.end(), rpart.begin(), rpart.end());
@@ -333,6 +360,9 @@ slice_at_character (const std::string source, char joint)
     return slicen;
 }
 
+/**
+* @brief Remove leading and trailing whitespace.
+*/
 std::string trim_string(std::string s)
 {
     // left trim

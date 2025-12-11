@@ -11,15 +11,36 @@
 *
 */
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <utility>
 #include <vector>
 
+#include "debug.hpp"
 #include "modules/correctlineoffset.hpp"
 #include "modules/lrcfilerewriter.hpp"
 #include "modules/timestampconv.hpp"
 #include "modules/tokens.hpp"
+
+static
+std::string maybe_chomp_bom(std::string line)
+{
+    if (line.starts_with("\xEF\xBB\xBF"))   // C++20
+        line.erase(0, 3);
+    return line;
+}
+
+bool looks_like_utf16_or_utf32(std::string_view s)
+{
+    return
+        (s.size() >= 2 && (s[0] == '\xFE' && s[1] == '\xFF')) ||
+        (s.size() >= 2 && (s[0] == '\xFF' && s[1] == '\xFE')) ||
+        (s.size() >= 4 && (s[0] == '\x00' && s[1] == '\x00' &&
+                           s[2] == '\xFE' && s[3] == '\xFF')) ||
+        (s.size() >= 4 && (s[0] == '\xFF' && s[1] == '\xFE' &&
+                           s[2] == '\x00' && s[3] == '\x00'));
+}
 
 /**
 * @brief Perform required processing steps to lyrics metadata.
@@ -45,6 +66,9 @@
 *     you will compensate the timestamps in the inverted order:
 *     a positive offset will delay the time where a lyric is
 *     shown and a negative will advance it.
+*   - dropmetadata: Drop off all the metadata tags on the output
+*     stream. This is useful for directly embedding lyrics onto
+*     a song file metadata.
 *
 * @param lyrics A vector containing lyrics lines, preferably
 * read from a .lrc file, but there's a direct overload to read
@@ -65,6 +89,7 @@ process_lyrics (const filelines lyrics, const std::string options)
     bool correctoffset = false;
     bool overrideoffset = false;
     bool invertoffset = false;
+    bool dropmetadata = false;
 
     // Placeholder variables
     long offset = 0;
@@ -90,6 +115,10 @@ process_lyrics (const filelines lyrics, const std::string options)
         }
 
         if (opair.first == "invertoffset") invertoffset = true;
+
+        if (opair.first == "dropmetadata") {
+            dropmetadata = true;
+        }
     }
 
     // Apply the intended processing steps for each single line
@@ -100,7 +129,10 @@ process_lyrics (const filelines lyrics, const std::string options)
         // To be able to pop off offset lines
         bool does_this_line_have_an_offset_tag = false;
 
+        std::string processed_line = i;
+
         // look for an "offset" tag in the current line
+        // additionaly drop metadata tags
         for (const auto& [key, value] : tags)
         {
             if ((key == "offset") || (key == "of"))
@@ -111,12 +143,22 @@ process_lyrics (const filelines lyrics, const std::string options)
 
                 // pop off this line
                 does_this_line_have_an_offset_tag = true;
-
-                break;                           // first offset wins
+                break; // first offset wins
             }
         }
 
-        std::string processed_line = i;
+        // Pop metadata tags if requested
+        // Prefer shortest name
+        if (dropmetadata) {
+            processed_line = pop_tag(processed_line, "ti");
+            processed_line = pop_tag(processed_line, "ar");
+            processed_line = pop_tag(processed_line, "al");
+            processed_line = pop_tag(processed_line, "au");
+            processed_line = pop_tag(processed_line, "le");
+            processed_line = pop_tag(processed_line, "by");
+            processed_line = pop_tag(processed_line, "re");
+            processed_line = pop_tag(processed_line, "ve");
+        }
 
         // Don't accidentally take away metadata or lyrics but rather
         // remove the offset tag
@@ -155,6 +197,12 @@ process_lyrics (const fs::path lyrics, const std::string options)
 
     std::string line;
     while (std::getline(lrcfile, line)) {
+        if (feed.empty() && looks_like_utf16_or_utf32(line)) {
+            throw std::runtime_error(
+                "File appears to be UTF-16/32 – LRC must be UTF-8.");
+        }
+        line = maybe_chomp_bom(std::move(line));
+        line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
         feed.push_back(line);
     }
 
