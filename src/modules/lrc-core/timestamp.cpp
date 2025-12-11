@@ -1,17 +1,19 @@
 /**
-* @file timestampconv.cpp
+* @file timestamp.cpp
 * @brief Convert timestamps from and to milliseconds.
 * @par divide_timestamp("23:24.35");
 * @par timestamp_to_ms("23:24.35");
 * @par ms_to_timestamp(1404350);
 */
 
-#include "globals.hpp"
 #include <algorithm>
 #include <cctype>
 #include <iostream>
 #include <string>
-#include "modules/timestampconv.hpp"
+
+
+#include "globals.hpp"
+#include "timestamp.hpp"
 
 // #include "debug.hpp"
 

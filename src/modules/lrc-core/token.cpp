@@ -1,5 +1,5 @@
 /**
-* @file tokens.cpp
+* @file token.cpp
 * @brief Tools to divide a lyric line in a series of tokens and
 * serialize afterwards.
 * @par tokenize_lyric_line ("[00:00:00] Beginning of a song");
@@ -12,8 +12,8 @@
 #include <string>
 #include <vector>
 
-#include "modules/timestampconv.hpp"
-#include "modules/tokens.hpp"
+#include "timestamp.hpp"
+#include "token.hpp"
 
 /**
 * @brief Split a line in multiple "tokens" in order to be able to
@@ -361,7 +361,7 @@ slice_at_character (const std::string source, char joint)
 }
 
 /**
-* @brief Remove leading and trailing whitespace.
+* @brief Remove leading and trailing whitespace characters.
 */
 std::string trim_string(std::string s)
 {

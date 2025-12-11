@@ -1,13 +1,13 @@
 // unit_tests.cpp
-// g++ -std=c++17 unit_tests.cpp src/modules/*.cpp -I src/include && ./a.out
+// g++ -std=c++17 unit_tests.cpp src/*.cpp -I src/include && ./a.out
 #include <iostream>
 #include <vector>
 #include <string>
 
-#include "modules/lrcfilerewriter.hpp"
-#include "modules/timestampconv.hpp"
-#include "modules/tokens.hpp"
-#include "modules/correctlineoffset.hpp"
+#include "process.hpp"
+#include "timestamp.hpp"
+#include "token.hpp"
+#include "line.hpp"
 
 // #include "src/include/debug.hpp"
 

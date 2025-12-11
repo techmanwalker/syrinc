@@ -1,11 +1,11 @@
 /**
-* @file lrcfilerewriter.cpp
-* @brief The actual .lrc data rewriter.
+* @file process.cpp
+* @brief The actual .lrc data processor.
 *
 * Here we'll take a plugins-like approach where the developer can
 * stack multiple functions a.k.a. processing passes for each line.
 * This way, one can run posprocessing passes besides the simple
-* offset correction if it's ever needed.
+* offset correction if it's ever needed (like dropping metadata)
 *
 * Contains some file I/O management code.
 *
@@ -17,11 +17,10 @@
 #include <utility>
 #include <vector>
 
-#include "debug.hpp"
-#include "modules/correctlineoffset.hpp"
-#include "modules/lrcfilerewriter.hpp"
-#include "modules/timestampconv.hpp"
-#include "modules/tokens.hpp"
+#include "line.hpp"
+#include "process.hpp"
+#include "timestamp.hpp"
+#include "token.hpp"
 
 static
 std::string maybe_chomp_bom(std::string line)

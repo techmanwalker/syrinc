@@ -1,5 +1,5 @@
 /**
-* @file correctlineoffset.cpp
+* @file line.cpp
 * 
 * @brief Foundation utilities to be able to analyze a lyric string
 * looking for timestamps and being able to correct them.
@@ -11,9 +11,9 @@
 #include <string>
 #include <vector>
 
-#include "modules/correctlineoffset.hpp"
-#include "modules/timestampconv.hpp"
-#include "modules/tokens.hpp"
+#include "line.hpp"
+#include "timestamp.hpp"
+#include "token.hpp"
 
 /**
 * @brief Correct all the timestamps present in the line

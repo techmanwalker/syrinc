@@ -15,17 +15,18 @@ endif()
 
 # this one contains the code to process .lrc files such as
 # applying the offset values and partial formatting
-file(GLOB_RECURSE tsrewind_cpp
-    src/modules/*.cpp
+file(GLOB_RECURSE lrc-core-cpp
+    src/modules/lrc-core/*.cpp
 )
-add_library(tsrewind STATIC
-    "${tsrewind_cpp}"
+add_library(lrc-core STATIC
+    "${lrc-core-cpp}"
 )
-target_include_directories(tsrewind PUBLIC
+target_include_directories(lrc-core PUBLIC
     "${CMAKE_SOURCE_DIR}/src/include"
+    "${CMAKE_SOURCE_DIR}/src/include/modules/lrc-core"
 )
 # activate or deactivate the debug logging macro
-target_compile_definitions(tsrewind PUBLIC
+target_compile_definitions(lrc-core PUBLIC
     $<$<CONFIG:Debug>:DEBUG_BUILD>
 )
 
@@ -33,13 +34,16 @@ target_compile_definitions(tsrewind PUBLIC
 add_executable(syrinc
     src/cli/cli.cpp
 )
-target_link_libraries(syrinc PRIVATE tsrewind)
+target_link_libraries(syrinc PRIVATE lrc-core)
+target_include_directories(syrinc PUBLIC
+    "${CMAKE_SOURCE_DIR}/src/include"
+)
 
 # only if requested with -DBUILD_TESTS
 if(BUILD_TESTS)
-  add_executable(test "tests/tests.cpp")
-  target_link_libraries(test PRIVATE tsrewind)
-  target_include_directories(test PUBLIC
+  add_executable(test-lrc-core "tests/lrc-core.cpp")
+  target_link_libraries(test-lrc-core PRIVATE lrc-core)
+  target_include_directories(test-lrc-core PUBLIC
     "${CMAKE_SOURCE_DIR}/src/include"
   )
 endif()

@@ -4,8 +4,8 @@
 #include <vector>
 
 #include "debug.hpp"
-#include "modules/lrcfilerewriter.hpp"
-#include "modules/tokens.hpp"
+#include "process.hpp"
+#include "token.hpp"
 
 int main(int argc, char** argv)
 {
