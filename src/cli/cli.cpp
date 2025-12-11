@@ -1,6 +1,7 @@
 #include <cxxopts.hpp>
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include "debug.hpp"
 #include "modules/lrcfilerewriter.hpp"
@@ -11,7 +12,7 @@ int main(int argc, char** argv)
     cxxopts::Options opt("syrinc", "LRC offset fixer");
 
     opt.add_options()
-        ("f,file",      "input .lrc file",  cxxopts::value<std::string>())
+        ("f,file",      "input .lrc file, - to read from stdin",  cxxopts::value<std::string>())
         ("o,offset", "override offset, in ms",
         cxxopts::value<long>()->default_value(std::to_string(LONG_MIN))) // sentinel value
         ("i,invert",    "invert offset sign")
@@ -30,6 +31,9 @@ int main(int argc, char** argv)
     std::string file         = result["file"].as<std::string>();
     bool        invert       = result["invert"].as<bool>();
     bool        dropmetadata = result["drop-metadata"].as<bool>();
+
+    // Allow reading from file
+    bool use_stdin = file == "-";
 
     // retrieve offset like this so we can detect if the user typed -o 0 by accident
     long raw_offset = result["offset"].as<long>();
@@ -52,16 +56,33 @@ int main(int argc, char** argv)
         std::clog << "warning: -o 0 means \"use file offset\"; "
                  "file offset will be used.\n";
 
-    if (!file.empty())
-        std::cout <<
-            serialize_tokens(
-                process_lyrics(
-                    file,
-                    options
-                ),
-                "\n",
-                false
-            )
-        << std::endl;
+    // to simplify code reading, we'll save the processed lyrics here
+    filelines processed_lyrics_tokens;
+
+    // Allow reading from stdin
+    if (use_stdin) {
+        filelines feed;
         
+        // read stdin line by line
+        std::string line;
+        while (std::getline(std::cin, line))          // blocks until pipe closes
+            feed.push_back(std::move(line));
+        if (!std::cin.eof() && std::cin.bad()) {       // real I/O error
+            std::cerr << "i/o error: couldn't read stdin";
+            return 1;
+        }
+
+
+        processed_lyrics_tokens = process_lyrics(feed, options);
+    } else if (!file.empty()) {
+        processed_lyrics_tokens = process_lyrics(file, options);
+    }
+
+    std::cout <<
+        serialize_tokens(
+            processed_lyrics_tokens, "\n"
+        )
+    << std::endl;
+
+    return 0;
 }
