@@ -8,6 +8,14 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(CXXOPTS REQUIRED cxxopts>=2.0)
 
+# ----- FFmpeg -----
+
+# Ask pkg-config for the three libraries we need
+pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET
+                  libavformat>=58.0
+                  libavcodec>=58.0
+                  libavutil>=56.0)
+
 # ---- default BUILD_TESTS to ON when Debug ----
 if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT DEFINED BUILD_TESTS)
   set(BUILD_TESTS ON CACHE BOOL "Build test executable" FORCE)
@@ -30,11 +38,31 @@ target_compile_definitions(lrc-core PUBLIC
     $<$<CONFIG:Debug>:DEBUG_BUILD>
 )
 
+# audio file handling code, such as .flac, .aac, and more
+# interact directly with the LYRICS metadata field
+file(GLOB_RECURSE audio-cpp
+    src/modules/audio/*.cpp
+)
+add_library(audio STATIC
+    "${audio-cpp}"
+)
+target_link_libraries(audio PRIVATE PkgConfig::FFMPEG lrc-core)
+target_include_directories(audio PUBLIC
+    "${CMAKE_SOURCE_DIR}/src/include"
+    "${CMAKE_SOURCE_DIR}/src/include/modules/audio"
+    "${CMAKE_SOURCE_DIR}/src/include/modules/lrc-core"
+    "${FFMPEG_INCLUDE_DIRS}"
+)
+# activate or deactivate the debug logging macro
+target_compile_definitions(audio PUBLIC
+    $<$<CONFIG:Debug>:DEBUG_BUILD>
+)
+
 # build the basic cli interface
 add_executable(syrinc
     src/cli/cli.cpp
 )
-target_link_libraries(syrinc PRIVATE lrc-core)
+target_link_libraries(syrinc PRIVATE lrc-core audio)
 target_include_directories(syrinc PUBLIC
     "${CMAKE_SOURCE_DIR}/src/include"
 )
@@ -44,6 +72,12 @@ if(BUILD_TESTS)
   add_executable(test-lrc-core "tests/lrc-core.cpp")
   target_link_libraries(test-lrc-core PRIVATE lrc-core)
   target_include_directories(test-lrc-core PUBLIC
+    "${CMAKE_SOURCE_DIR}/src/include"
+  )
+
+  add_executable(test-audio "tests/audio.cpp")
+  target_link_libraries(test-audio PRIVATE audio)
+  target_include_directories(test-audio PUBLIC
     "${CMAKE_SOURCE_DIR}/src/include"
   )
 endif()

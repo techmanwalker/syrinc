@@ -4,8 +4,7 @@
 #include <string>
 #include <vector>
 
-namespace fs = std::filesystem;
-using filelines = std::vector<std::string>;
+#include "../../globals.hpp"
 
 filelines
 process_lyrics (const filelines lyrics, const std::string options = "");

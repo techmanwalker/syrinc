@@ -10,6 +10,17 @@
 * 1 cs = 10 ms
 *
 */
+
+#include <filesystem>
+#include <string>
+#include <vector>
+
+namespace fs = std::filesystem;
+
+using __dummy_path__ = fs::path;
+
+using filelines = std::vector<std::string>;
+
 struct tsmap {
     bool is_negative;
     unsigned long mm;

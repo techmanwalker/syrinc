@@ -68,7 +68,7 @@ divide_timestamp (const std::string source, bool disable_warning)
 
     // Everybody could make mistakes with formatting
     // so I'll be forgiving by performing a round-trip
-    // that will automatically balance the lenghts
+    // that will automatically balance the lengths
 
     if (
         ts.ss >= 60
@@ -84,7 +84,7 @@ divide_timestamp (const std::string source, bool disable_warning)
 
         if (!disable_warning)
             // obviously will show a warning
-            std::cerr << "warning: " + source + " timestamp is malformed; will round up to " + roundtrip_ts + "...";
+            std::cerr << "warning: " + source + " timestamp is malformed; will round up to " + roundtrip_ts + "..." << std::endl;
     }
 
     return ts;
