@@ -1,6 +1,6 @@
 # syrinc
 
-** Music lyrics metadata editor **
+**Music lyrics metadata editor**
 
 ---
 
