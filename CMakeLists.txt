@@ -81,3 +81,21 @@ if(BUILD_TESTS)
     "${CMAKE_SOURCE_DIR}/src/include"
   )
 endif()
+
+# Install
+if(NOT CMAKE_PREFIX_PATH)
+    set(CMAKE_PREFIX_PATH "/usr/local")
+endif()
+
+# Uninstall
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/uninstall.cmake"
+  "${CMAKE_CURRENT_BINARY_DIR}/cmake/uninstall.cmake"
+  IMMEDIATE @ONLY)
+
+add_custom_target(uninstall
+  COMMAND ${CMAKE_COMMAND} -P
+  "${CMAKE_CURRENT_BINARY_DIR}/cmake/uninstall.cmake")
+
+install(TARGETS syrinc
+        RUNTIME DESTINATION ${CMAKE_PREFIX_PATH}/bin)

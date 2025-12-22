@@ -169,27 +169,25 @@ handle_lrc_file_directly (
 
 int
 handle_audio_file_directly (
-    fs::path file,
+    fs::path audio_file,
     fs::path save_as,
     long offset,
     bool offset_provided,
-    bool invert
+    bool invert,
+    filelines source_lyrics // allows to override the lyrics inst
 )
 {
     // Ensure 100% format compatibility while still
     // allowing writing to stdout
     if (
         !save_as.empty()
-    &&  file.extension() != save_as.extension()
+    &&  audio_file.extension() != save_as.extension()
     &&  save_as.extension() != ".lrc"
     &&  save_as != "-"
     ) {
         std::cerr << "Source and destination extension must be the same, except for exporting an .lrc file." << std::endl;
         return 1;
     }
-
-    // Get audio lyrics metadata
-    filelines source_lyrics = get_audio_lyrics(file);
 
     // When working directly with audio metadata files, metadata MUST be dropped
     // to avoid showing up in the player
@@ -233,7 +231,7 @@ handle_audio_file_directly (
             try {
                 fs::path temporary_filename = build_temp_name(save_as, "-temp");
                 change_metadata_field_value(
-                    file,
+                    audio_file,
                     temporary_filename,
                     "LYRICS",
                     processed_lyrics_tokens
@@ -256,21 +254,44 @@ handle_audio_file_directly (
 
 int main(int argc, char** argv)
 {
-    cxxopts::Options opt("syrinc", "LRC offset fixer");
+    cxxopts::Options opt("syrinc", ".lrc offset fixer");
 
     opt.add_options()
-        ("f,file",      "input .lrc file, - to read from stdin",  cxxopts::value<std::string>())
+        ("f,file",      "input .lrc or song file, - to read from stdin",  cxxopts::value<std::string>())
+        ("l,link-lrc", "override audio's .lrc metadata with an external file instead", cxxopts::value<std::string>())
         ("s,save-as", "Save output to path "
                                  "   (leave empty for stdout, type :in: to overwrite source file)", cxxopts::value<std::string>()->default_value(""))
         ("o,offset", "override offset, in ms", cxxopts::value<long>())
         ("i,invert",    "invert offset sign")
         ("d,drop-metadata", "Drop out lyrics metadata tags")
-        ("h,help",      "print usage");
+        ("h,help",      "print full help");
+
+    const char* examples = R"(
+Examples:
+  Embed .lrc file into the audio metadata in place
+    syrinc -f audio.flac -l lyrics.lrc -s :in:
+
+  Export audio lyrics metadata to an external .lrc file
+    syrinc -f audio.flac -s lyrics.lrc
+
+  Correct audio lyrics timestamps and overwrite the source file
+    syrinc -f audio.flac -s :in:
+
+  Correct timestamps and save to another path
+    syrinc -f audio.flac -s output.flac
+
+  Apply custom offset and overwrite source file
+    syrinc -f audio.flac -o 500 -s :in:
+
+  Correct timestamps with time offset - standalone .lrc
+    syrinc -f lyrics.lrc -s :in:
+)";
 
     try {
         auto result = opt.parse(argc, argv);
         if (result.count("help")) {
-            std::cout << opt.help() << '\n';
+            std::cout << opt.help() << '\n'
+                << examples << std::endl;
             return 0;
         }
         if (!result.count("file"))     // -f missing
@@ -278,6 +299,10 @@ int main(int argc, char** argv)
 
         /* ----- JSON-like retrieval ----- */
         std::string file           = result["file"].as<std::string>();
+        // allow link-lrc to be empty
+        std::string link_lrc = result.count("link-lrc")
+            ? result["link-lrc"].as<std::string>()
+            : "";
         std::string save_as        = result["save-as"].as<std::string>();
         bool        invert         = result["invert"].as<bool>();
         bool        dropmetadata   = result["drop-metadata"].as<bool>();
@@ -318,9 +343,21 @@ int main(int argc, char** argv)
                 save_as,
                 offset,
                 offset_provided,
-                invert
+                invert,
+                // by default, just take whatever the audio metadata has
+                (link_lrc.empty() ? get_audio_lyrics(file) : 
+                    // else, process the external .lrc instead first
+                    process_lyrics(
+                        link_lrc,
+                        parse_options(offset, invert, 
+                        true // always drop metadata when dealing with audio files
+                        )
+                    )
+                )
             );
         } else {
+            if (!link_lrc.empty())
+                std::cout << "warning: both input files are .lrc, ignoring link-lrc input..." << std::endl;
             return handle_lrc_file_directly(
                 file,
                 save_as,
@@ -333,7 +370,8 @@ int main(int argc, char** argv)
 
     } catch (const cxxopts::exceptions::exception& e) {
         std::cerr << "Error: " << e.what() << "\n\n";
-        std::cout << opt.help() << '\n';
+        std::cout << opt.help() << '\n'
+                << examples << std::endl;
         return 1;
     }
 
