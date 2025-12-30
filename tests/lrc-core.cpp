@@ -5,6 +5,7 @@
 #include <string>
 
 #include "process.hpp"
+#include "tag.hpp"
 #include "timestamp.hpp"
 #include "token.hpp"
 #include "line.hpp"
@@ -238,7 +239,7 @@ void TEST_read_tags_from_line()
 {
     cout << "\n===== read_tags_from_line =====\n";
     auto run = [](const string& line){
-        vector<pair<string,string>> tags = read_tags_from_line(line);
+        std::vector<tag> tags = read_tags_from_line(line);
         cout << "LINE: \"" << line << "\"\nTAGS: ";
         for (auto& [k,v] : tags) cout << "'" << k << ": " << v << "' - ";
         cout << "\n\n";

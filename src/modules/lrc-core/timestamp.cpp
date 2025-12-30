@@ -11,7 +11,6 @@
 #include <iostream>
 #include <string>
 
-
 #include "globals.hpp"
 #include "timestamp.hpp"
 

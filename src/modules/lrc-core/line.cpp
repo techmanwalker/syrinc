@@ -42,7 +42,7 @@ correct_line_offset (const std::string source, const long offset, bool invert_di
     // We will overwrite on the fly and probably
     // we will accidentally format the line.
 
-    std::vector<std::string> line_tokens = tokenize_line(source, true);
+    std::vector<token> line_tokens = tokenize_line(source, true);
 
     // We will solely correct the timestamps here.
     for (int i = 0; i < line_tokens.size(); i++) {

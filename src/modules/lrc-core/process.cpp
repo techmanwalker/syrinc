@@ -19,6 +19,7 @@
 
 #include "line.hpp"
 #include "process.hpp"
+#include "tag.hpp"
 #include "timestamp.hpp"
 #include "token.hpp"
 
@@ -81,7 +82,7 @@ process_lyrics (const filelines lyrics, const std::string options)
     filelines out;
 
     // Read the options string
-    std::vector<std::string> options_tokens = tokenize_line(options);
+    std::vector<token> options_tokens = tokenize_line(options);
 
     // Cherry-pick the actually supported options
 
@@ -96,26 +97,26 @@ process_lyrics (const filelines lyrics, const std::string options)
     // Traverse through the tokenized options
     for (std::string o : options_tokens) {
         // opair = option pair key, value
-        std::pair<std::string, std::string> opair = slice_at_character(o, ':');
+        tag opair = slice_at_character(o, ':');
         // trim pair, just in case
-        opair.first = trim_string(opair.first);
-        opair.second = trim_string(opair.second);
+        opair.name = trim_string(opair.name);
+        opair.value = trim_string(opair.value);
 
-        if (opair.first == "correctoffset") {
+        if (opair.name == "correctoffset") {
             correctoffset = true;
 
             // Override only if requested
-            if (! (opair.second == "") && is_numeric_only(opair.second)) {
-                offset = std::stol(opair.second);
+            if (! (opair.value == "") && is_numeric_only(opair.value)) {
+                offset = std::stol(opair.value);
                 overrideoffset = true;
             }
 
             continue;
         }
 
-        if (opair.first == "invertoffset") invertoffset = true;
+        if (opair.name == "invertoffset") invertoffset = true;
 
-        if (opair.first == "dropmetadata") {
+        if (opair.name == "dropmetadata") {
             dropmetadata = true;
         }
     }
@@ -123,7 +124,7 @@ process_lyrics (const filelines lyrics, const std::string options)
     // Apply the intended processing steps for each single line
     for (const std::string i : lyrics) {
         // Fist of all, let's gather information from the lines themselves.
-        std::vector<std::pair<std::string, std::string>> tags = read_tags_from_line(i);
+        std::vector<tag> tags = read_tags_from_line(i);
 
         // To be able to pop off offset lines
         bool does_this_line_have_an_offset_tag = false;
