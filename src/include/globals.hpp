@@ -22,13 +22,6 @@ using __dummy_path__ = fs::path;
 using filelines = std::vector<std::string>;
 using token = std::string; // make the codebase obvious
 
-struct tsmap {
-    bool is_negative;
-    unsigned long mm;
-    unsigned long ss;
-    unsigned long cs;
-};
-
 struct tag {
     std::string name;
     std::string value;

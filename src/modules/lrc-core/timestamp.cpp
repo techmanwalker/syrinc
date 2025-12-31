@@ -8,38 +8,55 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstdint>
 #include <iostream>
 #include <string>
 
-#include "globals.hpp"
 #include "timestamp.hpp"
 
-// #include "debug.hpp"
+
+/*
+* Allow the same timestamp to be represented in its
+* multiple forms
+*/
+
+// Construct a timestamp from an already-ms length
+timestamp::timestamp(int64_t duration)
+{
+    this->duration = duration;
+}
 
 /**
-* @brief Separate the timestamp from mm:ss.cs
+* @brief Construct a timestamp from a string by
+* separating the timestamp in mm:ss.cs
 * to mm, ss, ms format.
 *
 * @param source timestamp to be split.
 *
 * @code
 * // returns mm = 0, ss = 0, ms = 100
-* tsmap ts = divide_timestamp("00:00.10");
+* ts_components ts = timestamp("00:00.10").as_tsmap();
 * 
 * // returns mm = 12, ss = 34, ms = 560
-* tsmap ts = divide_timestamp("12:34.56");
+* ts_components ts = divide_timestamp("12:34.56").as_tsmap();
 * @endcode
 *
 * @return the source timestamp as a struct with
 * mm, ss and cs members representing the
 * original source duration.
 */
-tsmap
-divide_timestamp (const std::string source, bool disable_warning)
+int64_t
+parse_timestamp (std::string source, bool disable_warning)
 {
-    tsmap ts;
+    if (!is_it_a_timestamp(source)) {
+        return 0;
+    };
 
-    if (!is_it_a_timestamp(source)) return ts;
+    ts_components ts;
+
+    // if a round-trip is performed, we'll advise the user
+    // at the end
+    bool trigger_warning = false;
 
     ts.mm = ts.ss = ts.cs = 0;
 
@@ -73,56 +90,65 @@ divide_timestamp (const std::string source, bool disable_warning)
         ts.ss >= 60
     ||  ts.cs >= 100
     ) {
-        std::string roundtrip_ts = ms_to_timestamp(
+        ts = timestamp(
             (ts.mm * 60000)
             + (ts.ss * 1000)
             + (ts.cs * 10)
-        );
+        ).as_tsmap();
 
-        ts = divide_timestamp(roundtrip_ts);
-
-        if (!disable_warning)
-            // obviously will show a warning
-            std::cerr << "warning: " + source + " timestamp is malformed; will round up to " + roundtrip_ts + "..." << std::endl;
+        trigger_warning = true;
     }
 
-    return ts;
+    int64_t duration = ((ts.mm * 60000)
+                    + (ts.ss * 1000)
+                    + (ts.cs * 10))
+                    * (is_negative ? -1 : 1);
+
+    // Trigger a warning if a roundtrip had to be performed
+    if (trigger_warning && !disable_warning)
+            // obviously will show a warning
+            std::cerr << "warning: " + source + " timestamp is malformed; will round up to " + timestamp(duration).as_string() + "..." << std::endl;
+
+    return duration;
 }
 
-long
-timestamp_to_ms (const std::string source)
+timestamp::timestamp (std::string source, bool disable_warning)
 {
-    if (!is_it_a_timestamp(source)) return 0;
-    
-    tsmap ts = divide_timestamp(source);
-
-    // Convert all the units to ms and sum them together
-
-    return
-    (
-        ts.mm * 60000
-    +   ts.ss * 1000
-    +   ts.cs * 10
-    ) * (ts.is_negative ? -1 : 1);
+    this->duration = parse_timestamp(source, disable_warning);
 }
 
 /**
-* @brief Convert milliseconds to timestamps.
+* @brief Return timestamp as a milliseconds length.
+*/
+long
+timestamp::as_ms() const
+{
+    return this->duration;
+}
+
+/**
+* @brief Return the timestamp as a timestamp map form.
 *
 * @code
-* // returns 05:10.00
-* long ms = ms_to_timestamp(310000);
+* // returns mm = 0, ss = 0, ms = 100
+* ts_components ts = divide_timestamp("00:00.10");
+* 
+* // returns mm = 12, ss = 34, ms = 560
+* ts_components ts = divide_timestamp("12:34.56");
 * @endcode
 *
-* @param source a time duration expressed in milliseconds
-* @param no_filling do not pad the resulting string with leading zeroes
+* @param zero_negative_timestamp clamp all negative timestamps
+* to zero
+*
+* @return the source timestamp as a struct with
+* mm, ss and cs members representing the timestamp
 */
-std::string
-ms_to_timestamp (const long source, bool no_filling, bool zero_negative_timestamps)
+ts_components
+timestamp::as_tsmap (bool zero_negative_timestamps) const
 {
-    tsmap ts;
+    ts_components ts;
     ts.mm = ts.ss = ts.cs = 0;
-    long remaining_ms = source;
+    long remaining_ms = this->duration;
     bool is_source_negative = false;
     if (remaining_ms < 0) {
         // Round negative timestamps up to zero if needed
@@ -132,7 +158,7 @@ ms_to_timestamp (const long source, bool no_filling, bool zero_negative_timestam
         } else
             // just return a zeroed timestamp, no need to
             // manually convert
-            return "00:00.00";
+            return ts;
     }
 
     // Progressive reduction, bigger units first
@@ -141,12 +167,52 @@ ms_to_timestamp (const long source, bool no_filling, bool zero_negative_timestam
     ts.ss = remaining_ms / 1000; remaining_ms -= ts.ss * 1000;
     ts.cs = remaining_ms / 10;
 
-    return // with filling if needed
-        std::string(is_source_negative ? "-" : "")
-    +   (ts.mm < 10 ? "0" : "") + std::to_string(ts.mm) + ":"
-    +   (ts.ss < 10 ? "0" : "") + std::to_string(ts.ss) + "."
-    +   (ts.cs < 10 ? "0" : "") + std::to_string(ts.cs);
+    return ts;
 }
+
+std::string
+timestamp::as_string (bool no_filling) const
+{
+    ts_components ts = this->as_tsmap();
+
+    return // with filling if needed
+        std::string((this->duration < 0) ? "-" : "")
+    +   (ts.mm < 10 && !no_filling ? "0" : "") + std::to_string(ts.mm) + ":"
+    +   (ts.ss < 10 && !no_filling ? "0" : "") + std::to_string(ts.ss) + "."
+    +   (ts.cs < 10 && !no_filling ? "0" : "") + std::to_string(ts.cs);
+}
+
+/**
+* @brief Apply an offset, expressed in milliseconds, to a timestamp.
+*
+* By default, a negative integer delays the timestamp and vice versa
+* according to most implementations in the wild, as if a negative
+* value meant "this is X milliseconds behind where it's supposed
+* to be".
+* 
+* You can invert this behavior by setting invert_direction to true,
+* so it fits with the analogy of a positive number meaning "this
+* is intended to be shown X milliseconds later".
+* @code
+* // returns "00:13.00"
+* std::string ts = apply_offset_to_timestamp("00:12.33", -670");
+* @endcode
+*
+* @param source the timestamp to be corrected
+* @param offset offset value, expressed in milliseconds
+* @param invert_direction negate the sign of the offset
+*/
+timestamp &
+timestamp::apply_offset (const long offset, bool invert_direction)
+{    
+    this->duration -= (offset * (invert_direction ? -1 : 1));
+
+    // prevent from going below zero
+    if (this->duration <= 0) this->duration = 0;
+
+    return *this;
+}
+
 
 /**
 * @brief Check if a given string is an mm:ss.ms timestamp

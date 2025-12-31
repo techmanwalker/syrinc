@@ -26,7 +26,7 @@ void TEST_divide_timestamp()
 {
     cout << "\n===== divide_timestamp =====\n";
     auto run = [](const string& s){
-        tsmap m = divide_timestamp(s);
+        ts_components m = timestamp(s).as_tsmap();
         cout << s << "  ->  mm=" << m.mm
              << " ss=" << m.ss << " cs=" << m.cs << "\n";
     };
@@ -44,7 +44,7 @@ void TEST_ms_to_timestamp()
 {
     cout << "\n===== ms_to_timestamp =====\n";
     auto run = [](long ms){
-        string ts = ms_to_timestamp(ms);
+        string ts = timestamp(ms).as_string();
         PRINT("ms_to_timestamp", ms, ts);
     };
     run(1);
@@ -64,7 +64,7 @@ void TEST_timestamp_to_ms()
 {
     cout << "\n===== timestamp_to_ms =====\n";
     auto run = [](const string& ts){
-        long ms = timestamp_to_ms(ts);
+        long ms = timestamp(ts).as_ms();
         PRINT("timestamp_to_ms", ts, ms);
     };
     run("00:00.00");
@@ -100,8 +100,8 @@ void TEST_round_trip()
     auto truncated = [](long ms) { return (ms / 10) * 10; };
 
     auto test = [&](long ms, const string& ts, bool expect_equal){
-        long   ms_back  = timestamp_to_ms(ts);
-        string ts_back  = ms_to_timestamp(ms);
+        long   ms_back  = timestamp(ts).as_ms();
+        string ts_back  = timestamp(ms).as_string();
 
         bool ok_ms = (ms_back == truncated(ms));   // last digit forced to 0
         bool ok_ts = (ts == ts_back);
@@ -117,7 +117,7 @@ void TEST_round_trip()
         0, 10, 100, 1000, 10'000, 60'000, 123'450,   // already 0-ended
         123'456, 65000, 3'600'000, 3'659'990
     };
-    for (long v : ms_vals) test(v, ms_to_timestamp(v), true);
+    for (long v : ms_vals) test(v, timestamp(v).as_string(), true);
 
     /* extra VALID mm:ss.cs strings ---------------------------------------- */
     const vector<string> ts_vals = {
@@ -125,12 +125,12 @@ void TEST_round_trip()
         "12:34.56", "65:13.27", "99:59.99", "-65:55.36",
         "-23:24.35"
     };
-    for (const string& s : ts_vals) test(timestamp_to_ms(s), s, true);
+    for (const string& s : ts_vals) test(timestamp(s).as_ms(), s, true);
 
     /* INVALID strings – only check they don’t crash ----------------------- */
     const vector<string> bad = { "abc", "12-34.56", "", "250" };
     for (const string& s : bad){
-        long ms_bad = timestamp_to_ms(s);
+        long ms_bad = timestamp(s).as_ms();
         cout << "invalid ts=\"" << s << "\"  ms=" << ms_bad << '\n';
     }
 }
@@ -198,7 +198,7 @@ void TEST_apply_offset_to_timestamp()
 {
     cout << "\n===== apply_offset_to_timestamp (+1250 ms) =====\n";
     auto run = [](const string& ts, long offset, bool inv=false){
-        string out = apply_offset_to_timestamp(ts, offset, inv);
+        string out = timestamp(ts).apply_offset(offset, inv).as_string();
         /*
         LOG("");
         LOG("timestamp in ms: " + std::to_string(timestamp_to_ms(ts)));
