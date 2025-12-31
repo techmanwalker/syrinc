@@ -22,6 +22,7 @@ class timestamp {
         timestamp(int64_t duration = 0);
         timestamp(ts_components ts);
         timestamp(std::string source, bool disable_warning = false);
+        timestamp(std::string_view source, bool disable_warning = false);
 
         long
         as_ms() const;
@@ -37,10 +38,13 @@ class timestamp {
 };
 
 int64_t
-parse_timestamp (std::string source, bool disable_warning = false);
+parse_timestamp (std::string_view source, bool disable_warning = false);
 
 bool
-is_it_a_timestamp (const std::string source);
+is_it_a_timestamp (const std::string_view source);
 
 bool
-is_numeric_only (const std::string source);
+is_numeric_only (const std::string_view source);
+
+long
+to_long(std::string_view sv);

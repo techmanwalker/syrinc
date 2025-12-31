@@ -7,10 +7,12 @@
 */
 
 #include <algorithm>
+#include <charconv>
 #include <cctype>
 #include <cstdint>
 #include <iostream>
 #include <string>
+#include <string_view>
 
 #include "timestamp.hpp"
 
@@ -46,7 +48,7 @@ timestamp::timestamp(int64_t duration)
 * original source duration.
 */
 int64_t
-parse_timestamp (std::string source, bool disable_warning)
+parse_timestamp (std::string_view source, bool disable_warning)
 {
     if (!is_it_a_timestamp(source)) {
         return 0;
@@ -70,17 +72,17 @@ parse_timestamp (std::string source, bool disable_warning)
 
     bool is_negative = source[0] == '-';
 
-    std::string minutes_component = source.substr((is_negative ? 1 : 0), colon_pos);
-    std::string seconds_component = source.substr(colon_pos + 1, source.length() - dot_pos - 1);
-    std::string centiseconds_component = source.substr(dot_pos + 1, source.length() - dot_pos - 1);
+    std::string_view minutes_component = source.substr((is_negative ? 1 : 0), colon_pos);
+    std::string_view seconds_component = source.substr(colon_pos + 1, source.length() - dot_pos - 1);
+    std::string_view centiseconds_component = source.substr(dot_pos + 1, source.length() - dot_pos - 1);
 
     // the check of the components being all numeric
     // was already done by is_it_a_timestamp, so
     // no need of a try-catch here
     ts.is_negative = is_negative;
-    ts.mm = std::stol(minutes_component);
-    ts.ss = std::stol(seconds_component);
-    ts.cs = std::stol(centiseconds_component);
+    ts.mm = to_long(minutes_component);
+    ts.ss = to_long(seconds_component);
+    ts.cs = to_long(centiseconds_component);
 
     // Everybody could make mistakes with formatting
     // so I'll be forgiving by performing a round-trip
@@ -107,7 +109,7 @@ parse_timestamp (std::string source, bool disable_warning)
     // Trigger a warning if a roundtrip had to be performed
     if (trigger_warning && !disable_warning)
             // obviously will show a warning
-            std::cerr << "warning: " + source + " timestamp is malformed; will round up to " + timestamp(duration).as_string() + "..." << std::endl;
+            std::cerr << "warning: " << source << " timestamp is malformed; will round up to " + timestamp(duration).as_string() + "..." << std::endl;
 
     return duration;
 }
@@ -117,10 +119,15 @@ timestamp::timestamp (std::string source, bool disable_warning)
     this->duration = parse_timestamp(source, disable_warning);
 }
 
+timestamp::timestamp (std::string_view source, bool disable_warning)
+{
+    this->duration = parse_timestamp(source, disable_warning);
+}
+
 /**
 * @brief Return timestamp as a milliseconds length.
 */
-long
+int64_t
 timestamp::as_ms() const
 {
     return this->duration;
@@ -221,7 +228,7 @@ timestamp::apply_offset (const long offset, bool invert_direction)
 * The only requirements are that all of the characters are digits, : or .
 */
 bool
-is_it_a_timestamp (const std::string source)
+is_it_a_timestamp (const std::string_view source)
 {
     if (source.empty()) return false;
 
@@ -257,7 +264,7 @@ is_it_a_timestamp (const std::string source)
 * @brief Check if a string contains numbers only.
 */
 bool
-is_numeric_only (const std::string source)
+is_numeric_only (const std::string_view source)
 {
     // for "" it returns true as it can be treated as 0
     for (int i = 0; i < source.length(); i++) {
@@ -273,4 +280,16 @@ is_numeric_only (const std::string source)
     }
 
     return true;
+}
+
+long
+to_long (std::string_view sv)
+{
+    long value = 0;
+    auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), value);
+
+    if (ec != std::errc())
+        return 0; // o lanza, o maneja error
+
+    return value;
 }

@@ -42,14 +42,22 @@ correct_line_offset (const std::string source, const long offset, bool invert_di
     // We will overwrite on the fly and probably
     // we will accidentally format the line.
 
-    std::vector<token> line_tokens = tokenize_line(source, true);
+    std::vector<std::string_view> line_tokens_views = tokenize_line(source, true);
 
-    // We will solely correct the timestamps here.
-    for (int i = 0; i < line_tokens.size(); i++) {
-        if (!is_it_a_timestamp(line_tokens[i])) continue;
+    std::vector<std::string> output_line_tokens;
+    
+    for (std::string_view token : line_tokens_views) {
+        if (!is_it_a_timestamp(token)) {
+            output_line_tokens.emplace_back(token);
+            continue;
+        };
 
-        line_tokens[i] = timestamp(line_tokens[i]).apply_offset(offset, invert_direction).as_string();
+        output_line_tokens.emplace_back(
+            timestamp(token)
+                .apply_offset(offset, invert_direction)
+                .as_string()
+        );
     }
 
-    return serialize_tokens(line_tokens, " ", true);
+    return serialize_tokens(output_line_tokens, " ", true);
 }

@@ -1,4 +1,5 @@
 #include <filesystem>
+#include <string_view>
 
 #include "globals.hpp"
 #include "token.hpp"
@@ -66,8 +67,8 @@ std::string
 change_metadata_field_value(
     const std::filesystem::path &source,
     const std::filesystem::path &output,
-    const std::string &field_name,
-    const std::string &field_value
+    const std::string_view field_name,
+    const std::string_view field_value
 )
 {
     // Build the ffmpeg command
@@ -103,16 +104,21 @@ change_metadata_field_value(
 */
 std::string
 change_metadata_field_value (
-    const fs::path source,
-    const fs::path output,
-    const std::string field_name,
+    const fs::path &source,
+    const fs::path &output,
+    const std::string_view field_name,
     const filelines field_value
 )
 {
+    std::vector<std::string_view> field_value_views;
+    for (int i = 0; i < field_value.size(); i++) {
+        field_value_views.emplace_back(std::string_view(field_value[i]));
+    }
+
     return change_metadata_field_value(
         source,
         output,
         field_name,
-        serialize_tokens(field_value, "\n", false)
+        serialize_tokens(field_value_views, "\n", false)
     );
 }

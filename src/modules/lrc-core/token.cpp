@@ -26,49 +26,49 @@
 *
 * @param source the string to be converted to space-sparated tokens.
 */
-std::vector<token>
-tokenize_line (const std::string source, bool treat_as_lyrics_line)
+std::vector<std::string_view>
+tokenize_line(std::string_view source, bool treat_as_lyrics_line)
 {
-    std::vector<std::string> tokens;
-    std::string current_token;
+    std::vector<std::string_view> tokens;
 
-    // By default, separate solely for spaces.
-    for (int i = 0; i < source.length(); i++) {
-        if (source[i] == ' ' && !current_token.empty()) {
-            tokens.push_back(current_token);
-            current_token = "";
+    size_t token_start = 0;
+    bool in_token = false;
+
+    auto flush = [&](size_t end) {
+        if (in_token && end > token_start)
+            tokens.emplace_back(source.data() + token_start, end - token_start);
+        in_token = false;
+    };
+
+    for (size_t i = 0; i < source.size(); ++i) {
+        char c = source[i];
+
+        if (c == ' ') {
+            flush(i);
+            continue;
         }
-        
-        // Lyric lines need their own special treatment. So,
-        // if it is a tag character...
-        if (
-            (
-                source[i] == '[' || source[i] == ']'
-            ||  source[i] == '<' || source[i] == '>'
-            ) && treat_as_lyrics_line
-        ) {
-            // For the sake of emptiness
-            if (!current_token.empty())
-                tokens.push_back(current_token);
 
-            // Push back this tag character SEPARATELY
-            tokens.emplace_back(1, source[i]);
+        if (treat_as_lyrics_line &&
+            (c == '[' || c == ']' || c == '<' || c == '>'))
+        {
+            flush(i);
+            tokens.emplace_back(source.data() + i, 1); // ← CORRECTO
+            continue;
+        }
 
-            // Clean buffer
-            current_token = "";
-        } else {
-            if (source[i] != ' ')
-                current_token += source[i];
+        if (!in_token) {
+            token_start = i;
+            in_token = true;
         }
     }
 
-    if (!current_token.empty()) tokens.push_back(current_token);
-    
+    flush(source.size());
     return tokens;
 }
 
+
 /**
-* @brief Convert a token listt to a single string
+* @brief Convert a token list to a single string
 *
 * Just concatenate a token vector back to a string, but ensuring that 
 * timestamp tags stay together like [00:00.00] and don't become sparse
@@ -78,7 +78,7 @@ tokenize_line (const std::string source, bool treat_as_lyrics_line)
 *
 */
 std::string
-serialize_tokens (const std::vector<std::string> token_vector, std::string joint, bool treat_as_lyrics_line)
+serialize_tokens (const std::vector<std::string_view> token_vector, std::string_view joint, bool treat_as_lyrics_line)
 {
     std::string out;
     // To keep timestamps tight together
@@ -107,16 +107,36 @@ serialize_tokens (const std::vector<std::string> token_vector, std::string joint
             dont_write_joint = false;
 
         // Perform the actual joint
-        out += (!dont_write_joint ? joint : "") + token_vector[i];
+        if (!dont_write_joint) out.append(joint);
+        out.append(token_vector[i]);
     }
 
     return out;
 }
 
+std::string
+serialize_tokens (
+    const std::vector<std::string>& token_vector,
+    std::string_view joint,
+    bool treat_as_lyrics_line
+)
+{
+    std::vector<std::string_view> token_views;
+    token_views.reserve(token_vector.size());
+
+    for (const std::string& token : token_vector) {
+        token_views.emplace_back(token);
+    }
+
+    return serialize_tokens(token_views, joint, treat_as_lyrics_line);
+}
+
+
 /**
 * @brief Remove leading and trailing whitespace characters.
 */
-std::string trim_string(std::string s)
+std::string
+trim_string(std::string s)
 {
     // left trim
     s.erase(s.begin(),

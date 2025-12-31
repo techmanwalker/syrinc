@@ -164,7 +164,7 @@ void TEST_tokenize_lyric_line()
 {
     cout << "\n===== tokenize_lyric_line =====\n";
     auto run = [](const string& line){
-        vector<string> v = tokenize_line(line, true);
+        vector<string_view> v = tokenize_line(line, true);
         cout << "LINE: \"" << line << "\"\nTOKENS: ";
         for(auto& t: v) cout << "{" << t << "} ";
         cout << "\n\n";
@@ -183,7 +183,7 @@ void TEST_tokenize_lyric_line()
 void TEST_serialize_lyric_tokens()
 {
     cout << "\n===== serialize_lyric_tokens =====\n";
-    auto run = [](const vector<string>& v){
+    auto run = [](const vector<string_view>& v){
         string line = serialize_tokens(v, " ", true);
         cout << "VECTOR → LINE: \"" << line << "\"\n";
     };

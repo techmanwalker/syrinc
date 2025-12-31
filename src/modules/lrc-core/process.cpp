@@ -82,7 +82,7 @@ process_lyrics (const filelines lyrics, const std::string options)
     filelines out;
 
     // Read the options string
-    std::vector<token> options_tokens = tokenize_line(options);
+    std::vector<std::string_view> options_tokens = tokenize_line(options);
 
     // Cherry-pick the actually supported options
 
@@ -95,7 +95,7 @@ process_lyrics (const filelines lyrics, const std::string options)
     long offset = 0;
 
     // Traverse through the tokenized options
-    for (std::string o : options_tokens) {
+    for (std::string_view o : options_tokens) {
         // opair = option pair key, value
         tag opair = slice_at_character(o, ':');
         // trim pair, just in case
@@ -122,7 +122,7 @@ process_lyrics (const filelines lyrics, const std::string options)
     }
 
     // Apply the intended processing steps for each single line
-    for (const std::string i : lyrics) {
+    for (const std::string &i : lyrics) {
         // Fist of all, let's gather information from the lines themselves.
         std::vector<tag> tags = read_tags_from_line(i);
 

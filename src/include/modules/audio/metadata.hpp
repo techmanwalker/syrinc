@@ -9,14 +9,14 @@ std::string
 change_metadata_field_value(
     const std::filesystem::path &source,
     const std::filesystem::path &output,
-    const std::string &field_name,
-    const std::string &field_value
+    const std::string_view field_name,
+    const std::string_view field_value
 );
 
-std::string 
+std::string
 change_metadata_field_value (
-    const fs::path source,
-    const fs::path output,
-    const std::string field_name,
+    const fs::path &source,
+    const fs::path &output,
+    const std::string_view field_name,
     const filelines field_value
 );

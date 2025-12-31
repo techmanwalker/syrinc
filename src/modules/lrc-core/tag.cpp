@@ -27,7 +27,7 @@
 *
 */
 std::vector<tag>
-read_tags_from_line (const std::string source)
+read_tags_from_line (const std::string_view source)
 {
     // Auxiliary output
     std::vector<token> prolly_tags;
@@ -103,7 +103,7 @@ read_tags_from_line (const std::string source)
 */
 std::string
 pop_tag (std::string source, std::string key) {
-    std::vector<token> tokenized_source = tokenize_line(source, true);
+    std::vector<std::string_view> tokenized_source = tokenize_line(source, true);
 
     unsigned long key_index_in_vector = std::string::npos;
     unsigned long opening_bracket_index = 0;
@@ -192,16 +192,16 @@ pop_tag (std::string source, std::string key) {
     // whatever is not part of the tag we want to pop
 
     // part before the opening bracket
-    std::vector<std::string> lpart (
+    std::vector<std::string_view> lpart (
         tokenized_source.begin(),
         tokenized_source.begin() + opening_bracket_index);
 
-    std::vector<std::string> rpart (
+    std::vector<std::string_view> rpart (
         tokenized_source.begin() + closing_bracket_index + 1,
         tokenized_source.end()
     );
     // we'll need this to validate what we just did
-    std::vector<std::string> thepart (
+    std::vector<std::string_view> thepart (
         tokenized_source.begin() + opening_bracket_index,
         tokenized_source.begin() + closing_bracket_index
     );
@@ -233,7 +233,7 @@ pop_tag (std::string source, std::string key) {
 *
 */
 tag
-slice_at_character (const std::string source, char joint)
+slice_at_character (const std::string_view source, char joint)
 {
     tag slicen;
     
