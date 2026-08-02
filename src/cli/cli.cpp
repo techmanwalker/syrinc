@@ -1,3 +1,4 @@
+#include <climits>
 #include <cxxopts.hpp>
 #include <filesystem>
 #include <fstream>
@@ -103,8 +104,17 @@ which(const std::string &program)
     std::string dir;
     while (std::getline(ss, dir, ':')) {
         std::string candidate = dir + "/" + cmd;
-        if (::access(candidate.c_str(), X_OK) == 0) {
-            return candidate;
+        std::error_code ec;
+
+        if (fs::is_regular_file(candidate, ec)) {
+            auto perms = fs::status(candidate, ec).permissions();
+            
+            // Check if the file has any executable permissions
+            bool is_executable = (perms & (fs::perms::owner_exec | fs::perms::group_exec | fs::perms::others_exec)) != fs::perms::none;
+            
+            if (is_executable) {
+                return candidate;
+            }
         }
     }
 
