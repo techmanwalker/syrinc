@@ -30,8 +30,8 @@ add_library(lrc-core STATIC
     "${lrc-core-cpp}"
 )
 target_include_directories(lrc-core PUBLIC
-    "${CMAKE_SOURCE_DIR}/src/include"
-    "${CMAKE_SOURCE_DIR}/src/include/modules/lrc-core"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/include/modules/lrc-core"
 )
 # activate or deactivate the debug logging macro
 target_compile_definitions(lrc-core PUBLIC
@@ -48,9 +48,9 @@ add_library(audio STATIC
 )
 target_link_libraries(audio PRIVATE PkgConfig::FFMPEG lrc-core)
 target_include_directories(audio PUBLIC
-    "${CMAKE_SOURCE_DIR}/src/include"
-    "${CMAKE_SOURCE_DIR}/src/include/modules/audio"
-    "${CMAKE_SOURCE_DIR}/src/include/modules/lrc-core"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/include/modules/audio"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/include/modules/lrc-core"
     "${FFMPEG_INCLUDE_DIRS}"
 )
 # activate or deactivate the debug logging macro
@@ -64,7 +64,7 @@ add_executable(syrinc
 )
 target_link_libraries(syrinc PRIVATE lrc-core audio)
 target_include_directories(syrinc PUBLIC
-    "${CMAKE_SOURCE_DIR}/src/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/include"
 )
 
 # only if requested with -DBUILD_TESTS
@@ -72,13 +72,13 @@ if(BUILD_TESTS)
   add_executable(test-lrc-core "tests/lrc-core.cpp")
   target_link_libraries(test-lrc-core PRIVATE lrc-core)
   target_include_directories(test-lrc-core PUBLIC
-    "${CMAKE_SOURCE_DIR}/src/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/include"
   )
 
   add_executable(test-audio "tests/audio.cpp")
   target_link_libraries(test-audio PRIVATE audio)
   target_include_directories(test-audio PUBLIC
-    "${CMAKE_SOURCE_DIR}/src/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/include"
   )
 endif()
 
