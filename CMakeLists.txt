@@ -39,6 +39,7 @@ target_include_directories(lrc-core PUBLIC
 target_compile_definitions(lrc-core PUBLIC
     $<$<CONFIG:Debug>:DEBUG_BUILD>
 )
+set_target_properties(lrc-core PROPERTIES EXPORT_NAME syrinc_lrc)
 
 # audio file handling code, such as .flac, .aac, and more
 # interact directly with the LYRICS metadata field
@@ -61,6 +62,7 @@ target_include_directories(audio PUBLIC
 target_compile_definitions(audio PUBLIC
     $<$<CONFIG:Debug>:DEBUG_BUILD>
 )
+set_target_properties(audio PROPERTIES EXPORT_NAME syrinc_audio)
 
 # build the basic cli interface
 add_executable(syrinc
