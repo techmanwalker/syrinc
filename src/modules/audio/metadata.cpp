@@ -2,7 +2,8 @@
 #include <string_view>
 
 #include "globals.hpp"
-#include "token.hpp"
+#include "tokens.hpp"
+#include "metadata.hpp"
 
 extern "C" {
     #include <libavformat/avformat.h>
@@ -11,6 +12,11 @@ extern "C" {
     #include <libavutil/imgutils.h>
     #include <libavutil/dict.h>
 }
+
+namespace syrinc {
+namespace audio {
+
+using namespace syrinc::tokens;
 
 /**
 * @brief Get song lyrics from the LYRICS file metadata field.
@@ -121,4 +127,7 @@ change_metadata_field_value (
         field_name,
         serialize_tokens(field_value_views, "\n", false)
     );
+}
+
+}
 }

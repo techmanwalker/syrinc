@@ -9,7 +9,12 @@
 #include "globals.hpp"
 #include "metadata.hpp"
 #include "process.hpp"
-#include "token.hpp"
+#include "tokens.hpp"
+
+using namespace syrinc;
+using namespace syrinc::audio;
+using namespace syrinc::process;
+using namespace syrinc::tokens;
 
 // Utilities
 

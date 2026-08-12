@@ -12,7 +12,10 @@
 #include <string>
 #include <vector>
 
-#include "token.hpp"
+#include "tokens.hpp"
+
+namespace syrinc {
+namespace tokens {
 
 /**
 * @brief Split a line in multiple "tokens" in order to be able to
@@ -147,4 +150,7 @@ trim_string(std::string s)
                              [](unsigned char c){ return std::isspace(c); }).base(),
             s.end());
     return s;
+}
+
+}
 }

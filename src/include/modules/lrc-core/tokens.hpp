@@ -3,6 +3,9 @@
 #include <string>
 #include <vector>
 
+namespace syrinc {
+namespace tokens {
+
 std::vector<std::string_view>
 tokenize_line (const std::string_view source, bool treat_as_lyrics_line = false);
 
@@ -14,3 +17,6 @@ serialize_tokens (const std::vector<std::string>& token_vector, std::string_view
 
 std::string
 trim_string (const std::string source);
+
+}
+}

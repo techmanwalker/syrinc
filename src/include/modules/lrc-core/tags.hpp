@@ -3,6 +3,9 @@
 #include <string>
 #include <vector>
 
+namespace syrinc {
+namespace tags {
+
 struct tag {
     std::string name;
     std::string value;
@@ -16,3 +19,6 @@ slice_at_character (const std::string_view source, char joint = ' ');
 
 std::string
 pop_tag (std::string source, std::string key);
+
+}
+}

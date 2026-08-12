@@ -11,9 +11,15 @@
 #include <string>
 #include <vector>
 
-#include "line.hpp"
-#include "timestamp.hpp"
-#include "token.hpp"
+#include "lines.hpp"
+#include "timestamps.hpp"
+#include "tokens.hpp"
+
+namespace syrinc {
+namespace lines {
+
+using namespace syrinc::timestamps;
+using namespace syrinc::tokens;
 
 /**
 * @brief Correct all the timestamps present in the line
@@ -60,4 +66,7 @@ correct_line_offset (const std::string source, const long offset, bool invert_di
     }
 
     return serialize_tokens(output_line_tokens, " ", true);
+}
+
+}
 }

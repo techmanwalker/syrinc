@@ -17,11 +17,11 @@
 #include <utility>
 #include <vector>
 
-#include "line.hpp"
+#include "lines.hpp"
 #include "process.hpp"
-#include "tag.hpp"
-#include "timestamp.hpp"
-#include "token.hpp"
+#include "tags.hpp"
+#include "timestamps.hpp"
+#include "tokens.hpp"
 
 static
 std::string maybe_chomp_bom(std::string line)
@@ -41,6 +41,17 @@ bool looks_like_utf16_or_utf32(std::string_view s)
         (s.size() >= 4 && (s[0] == '\xFF' && s[1] == '\xFE' &&
                            s[2] == '\x00' && s[3] == '\x00'));
 }
+
+
+
+namespace syrinc {
+namespace process {
+
+using namespace syrinc::lines;
+using namespace syrinc::tags;
+using namespace syrinc::timestamps;
+using namespace syrinc::tokens;
+
 
 /**
 * @brief Perform required processing steps to lyrics metadata.
@@ -209,4 +220,7 @@ process_lyrics (const fs::path lyrics, const std::string options)
     // Feed and return
     return
         process_lyrics(feed, options);
+}
+
+}
 }

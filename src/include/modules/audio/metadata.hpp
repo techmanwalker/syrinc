@@ -1,6 +1,10 @@
 #pragma once
 
-#include "../../globals.hpp"
+#include "globals.hpp"
+
+namespace syrinc {
+
+namespace audio {
 
 filelines
 get_audio_lyrics(const fs::path source);
@@ -20,3 +24,6 @@ change_metadata_field_value (
     const std::string_view field_name,
     const filelines field_value
 );
+
+}
+}

@@ -1,7 +1,13 @@
 #include "globals.hpp"
-#include "timestamp.hpp"
-#include "tag.hpp"
-#include "token.hpp"
+#include "timestamps.hpp"
+#include "tags.hpp"
+#include "tokens.hpp"
+
+namespace syrinc {
+namespace tags {
+
+using namespace syrinc::timestamps;
+using namespace syrinc::tokens;
 
 /**
 * @brief Find and parse tags in a lyric line.
@@ -250,4 +256,7 @@ slice_at_character (const std::string_view source, char joint)
     slicen.value = source.substr(joint_index + 1, source.length());
 
     return slicen;
+}
+
+}
 }

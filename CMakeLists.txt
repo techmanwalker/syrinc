@@ -24,6 +24,8 @@ endif()
 # this one contains the code to process .lrc files such as
 # applying the offset values and partial formatting
 file(GLOB_RECURSE lrc-core-cpp
+    RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
+    CONFIGURE_DEPENDS
     src/modules/lrc-core/*.cpp
 )
 add_library(lrc-core STATIC
@@ -41,6 +43,8 @@ target_compile_definitions(lrc-core PUBLIC
 # audio file handling code, such as .flac, .aac, and more
 # interact directly with the LYRICS metadata field
 file(GLOB_RECURSE audio-cpp
+    RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
+    CONFIGURE_DEPENDS
     src/modules/audio/*.cpp
 )
 add_library(audio STATIC

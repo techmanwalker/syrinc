@@ -14,8 +14,11 @@
 #include <string>
 #include <string_view>
 
-#include "timestamp.hpp"
+#include "timestamps.hpp"
 
+
+namespace syrinc {
+namespace timestamps {
 
 /*
 * Allow the same timestamp to be represented in its
@@ -292,4 +295,7 @@ to_long (std::string_view sv)
         return 0; // o lanza, o maneja error
 
     return value;
+}
+
+}
 }
