@@ -5,10 +5,17 @@
 #include <string>
 
 #include "process.hpp"
-#include "tag.hpp"
-#include "timestamp.hpp"
-#include "token.hpp"
-#include "line.hpp"
+#include "tags.hpp"
+#include "timestamps.hpp"
+#include "tokens.hpp"
+#include "lines.hpp"
+
+using namespace syrinc;
+using namespace syrinc::lines;
+using namespace syrinc::process;
+using namespace syrinc::tags;
+using namespace syrinc::timestamps;
+using namespace syrinc::tokens;
 
 // #include "src/include/debug.hpp"
 

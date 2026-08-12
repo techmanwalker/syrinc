@@ -3,6 +3,9 @@
 
 #include "metadata.hpp"
 
+using namespace syrinc;
+using namespace syrinc::audio;
+
 /* ---------- get_audio_lyrics (FFmpeg-C API) ---------- */
 void TEST_get_audio_lyrics(const char *url)
 {
