@@ -142,14 +142,29 @@ std::string
 trim_string(std::string s)
 {
     // left trim
-    s.erase(s.begin(),
-            std::find_if_not(s.begin(), s.end(),
-                             [](unsigned char c){ return std::isspace(c); }));
+    s.erase(0, s.find_first_not_of(" \t\n\r\f\v"));
+    
     // right trim
-    s.erase(std::find_if_not(s.rbegin(), s.rend(),
-                             [](unsigned char c){ return std::isspace(c); }).base(),
-            s.end());
+    size_t end = s.find_last_not_of(" \t\n\r\f\v");
+    if (end != std::string::npos) {
+        s.erase(end + 1);
+    } else {
+        s.clear(); // String is entirely whitespace
+    }
     return s;
+}
+
+
+// to remove empty [ ] where a timestamp was
+void 
+replace_all (std::string& str, const std::string& from, const std::string& to) {
+    if (from.empty()) return; // Prevent infinite loop if search string is empty
+    
+    size_t start_pos = 0;
+    while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length(); // Advance index past the replaced part
+    }
 }
 
 }

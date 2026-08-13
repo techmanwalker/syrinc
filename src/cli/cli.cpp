@@ -22,14 +22,16 @@ std::string
 parse_options (
     long offset,
     bool invert,
-    bool dropmetadata
+    bool dropmetadata,
+    bool unwrap
 ) {
     return
         "correctoffset"
         // Allow the -o option to override whatever offset the file has
         + (offset != 0 ? ":" + std::to_string(offset) : "") + " "
         + (invert ? "invertoffset" : "") + " "
-        + (dropmetadata ? "dropmetadata" : "");
+        + (dropmetadata ? "dropmetadata" : "") + " "
+        + (unwrap ? "unwrap" : "");
 }
 
 fs::path
@@ -133,7 +135,8 @@ handle_lrc_file_directly (
     long offset,
     bool offset_provided,
     bool invert,
-    bool dropmetadata
+    bool dropmetadata,
+    bool unwrap
 ) {
 
     // Allow reading from file
@@ -141,7 +144,7 @@ handle_lrc_file_directly (
 
     // options that will be fed to the process_lyrics engine
 
-    std::string options = parse_options(offset, invert, dropmetadata);
+    std::string options = parse_options(offset, invert, dropmetadata, unwrap);
 
     // For debugging
     LOG(options, "Processing lyrics with following options");
@@ -188,6 +191,7 @@ handle_audio_file_directly (
     long offset,
     bool offset_provided,
     bool invert,
+    bool unwrap,
     filelines source_lyrics // allows to override the lyrics inst
 )
 {
@@ -205,7 +209,7 @@ handle_audio_file_directly (
 
     // When working directly with audio metadata files, metadata MUST be dropped
     // to avoid showing up in the player
-    std::string options = parse_options(offset, invert, true);
+    std::string options = parse_options(offset, invert, true, unwrap);
 
     // Fire a warning if the user manually typed offset 0
     if (offset_provided && offset == 0)
@@ -278,6 +282,7 @@ int main(int argc, char** argv)
         ("o,offset", "override offset, in ms", cxxopts::value<long>())
         ("i,invert",    "invert offset sign")
         ("d,drop-metadata", "Drop out lyrics metadata tags")
+        ("u,unwrap", "Decouple lines with multiple timestamps as separate lines with exactly 1 timestamp each")
         ("h,help",      "print full help");
 
     const char* examples = R"(
@@ -320,6 +325,7 @@ Examples:
         std::string save_as        = result["save-as"].as<std::string>();
         bool        invert         = result["invert"].as<bool>();
         bool        dropmetadata   = result["drop-metadata"].as<bool>();
+        bool        unwrap         = result["unwrap"].as<bool>();
 
         // Respect in-place overwrite
         if (save_as == ":in:") save_as = file;
@@ -358,13 +364,15 @@ Examples:
                 offset,
                 offset_provided,
                 invert,
+                unwrap,
                 // by default, just take whatever the audio metadata has
                 (link_lrc.empty() ? get_audio_lyrics(file) : 
                     // else, process the external .lrc instead first
                     process_lyrics(
                         link_lrc,
                         parse_options(offset, invert, 
-                        true // always drop metadata when dealing with audio files
+                        true, // always drop metadata when dealing with audio files
+                        unwrap
                         )
                     )
                 )
@@ -378,6 +386,7 @@ Examples:
                 offset,
                 offset_provided,
                 invert,
+                unwrap,
                 dropmetadata
             );
         }

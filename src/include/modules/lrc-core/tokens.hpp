@@ -18,5 +18,10 @@ serialize_tokens (const std::vector<std::string>& token_vector, std::string_view
 std::string
 trim_string (const std::string source);
 
+
+// to remove empty [ ] where a timestamp was
+void 
+replace_all (std::string& str, const std::string& from, const std::string& to);
+
 }
 }

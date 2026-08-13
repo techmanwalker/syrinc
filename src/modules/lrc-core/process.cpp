@@ -80,6 +80,10 @@ using namespace syrinc::tokens;
 *   - dropmetadata: Drop off all the metadata tags on the output
 *     stream. This is useful for directly embedding lyrics onto
 *     a song file metadata.
+*   - unwrap: if a line happens to have multiple timestamps,
+*     duplicate the line as many timestamps are referenced and
+*     reference one for each duplicated line, so one line contains
+*     exactly one timestamp.
 *
 * @param lyrics A vector containing lyrics lines, preferably
 * read from a .lrc file, but there's a direct overload to read
@@ -101,6 +105,7 @@ process_lyrics (const filelines lyrics, const std::string options)
     bool overrideoffset = false;
     bool invertoffset = false;
     bool dropmetadata = false;
+    bool unwrap = false;
 
     // Placeholder variables
     long offset = 0;
@@ -125,10 +130,16 @@ process_lyrics (const filelines lyrics, const std::string options)
             continue;
         }
 
-        if (opair.name == "invertoffset") invertoffset = true;
+        if (opair.name == "invertoffset") {
+            invertoffset = true;
+        }
 
         if (opair.name == "dropmetadata") {
             dropmetadata = true;
+        }
+
+        if (opair.name == "unwrap") {
+            unwrap = true;
         }
     }
 
@@ -178,10 +189,21 @@ process_lyrics (const filelines lyrics, const std::string options)
         // Pop empty lines as well
         if (trim_string(processed_line) == "") continue;
 
-        if (correctoffset)
+        if (correctoffset) {
             processed_line = correct_line_offset(processed_line, offset, invertoffset);
+        }
 
-        out.push_back(processed_line);
+        if (unwrap) {
+            std::vector<timestamp> timestamps_of_line = line_timestamps(i);
+
+            // duplicate as many timestamps it has
+            for (const timestamp &ts : timestamps_of_line) {
+                out.push_back("[" + ts.as_string() + "] " + trim_string(strip_timestamps(i)));
+            }
+        } else {
+            // Paste back the line before without duplicating for 1:1 timestamp compliance
+            out.push_back(i);
+        }
     }
 
     return out;
