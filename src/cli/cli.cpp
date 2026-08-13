@@ -1,11 +1,10 @@
-#include <climits>
 #include <cxxopts.hpp>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <optional>
 #include <string>
 
-#include "debug.hpp"
 #include "globals.hpp"
 #include "metadata.hpp"
 #include "process.hpp"
@@ -17,22 +16,6 @@ using namespace syrinc::process;
 using namespace syrinc::tokens;
 
 // Utilities
-
-std::string
-parse_options (
-    long offset,
-    bool invert,
-    bool dropmetadata,
-    bool unwrap
-) {
-    return
-        "correctoffset"
-        // Allow the -o option to override whatever offset the file has
-        + (offset != 0 ? ":" + std::to_string(offset) : "") + " "
-        + (invert ? "invertoffset" : "") + " "
-        + (dropmetadata ? "dropmetadata" : "") + " "
-        + (unwrap ? "unwrap" : "");
-}
 
 fs::path
 build_temp_name (const fs::path source, std::string temp_signature)
@@ -132,11 +115,7 @@ int
 handle_lrc_file_directly (
     fs::path file,
     fs::path save_as,
-    long offset,
-    bool offset_provided,
-    bool invert,
-    bool dropmetadata,
-    bool unwrap
+    options o
 ) {
 
     // Allow reading from file
@@ -144,26 +123,24 @@ handle_lrc_file_directly (
 
     // options that will be fed to the process_lyrics engine
 
-    std::string options = parse_options(offset, invert, dropmetadata, unwrap);
-
     // For debugging
-    LOG(options, "Processing lyrics with following options");
-
-    // Fire a warning if the user manually typed offset 0
-    if (offset_provided && offset == 0)
-        std::clog << "warning: -o 0 means \"use file offset\"; "
-                "file offset will be used.\n";
+    // LOG(options, "Processing lyrics with following options");
 
     // to simplify code reading, we'll save the processed lyrics here
     filelines processed_lyrics_tokens;
+
+    // Fire a warning if the user manually typed offset 0
+    if (o.overrideoffset.has_value() && o.overrideoffset.value() == 0)
+        std::clog << "WARNING: -o 0 means \"use file offset\"; "
+                "file offset will be used.\n";
 
     // Allow reading from stdin
     if (use_stdin) {
         // Read .lrc data from stdin
         filelines feed = read_lines_from_stdin();
-        processed_lyrics_tokens = process_lyrics(feed, options);
+        processed_lyrics_tokens = process_lyrics(feed, o);
     } else if (!file.empty()) {
-        processed_lyrics_tokens = process_lyrics(file, options);
+        processed_lyrics_tokens = process_lyrics(file, o);
     }
 
     // Warn about empty file
@@ -188,10 +165,7 @@ int
 handle_audio_file_directly (
     fs::path audio_file,
     fs::path save_as,
-    long offset,
-    bool offset_provided,
-    bool invert,
-    bool unwrap,
+    options o,
     filelines source_lyrics // allows to override the lyrics inst
 )
 {
@@ -207,12 +181,8 @@ handle_audio_file_directly (
         return 1;
     }
 
-    // When working directly with audio metadata files, metadata MUST be dropped
-    // to avoid showing up in the player
-    std::string options = parse_options(offset, invert, true, unwrap);
-
     // Fire a warning if the user manually typed offset 0
-    if (offset_provided && offset == 0)
+    if (o.overrideoffset.has_value() && o.overrideoffset.value() == 0)
         std::clog << "WARNING: -o 0 means \"use file offset\"; "
                 "file offset will be used.\n";
 
@@ -220,7 +190,7 @@ handle_audio_file_directly (
     filelines processed_lyrics_tokens;
 
     // Feed the lyrics to process_lyrics
-    processed_lyrics_tokens = process_lyrics(source_lyrics, options);
+    processed_lyrics_tokens = process_lyrics(source_lyrics, o);
 
     // Warn about empty file
     if (processed_lyrics_tokens.size() == 0)
@@ -322,10 +292,14 @@ Examples:
         std::string link_lrc = result.count("link-lrc")
             ? result["link-lrc"].as<std::string>()
             : "";
-        std::string save_as        = result["save-as"].as<std::string>();
-        bool        invert         = result["invert"].as<bool>();
-        bool        dropmetadata   = result["drop-metadata"].as<bool>();
-        bool        unwrap         = result["unwrap"].as<bool>();
+
+        options o;
+
+        std::string save_as = result["save-as"].as<std::string>();
+        o.invertoffset      = result["invert"].as<bool>();
+        o.dropmetadata   = result["drop-metadata"].as<bool>();
+        o.unwrap         = result["unwrap"].as<bool>();
+        o.correctoffset  = true; // currently no need to disable it
 
         // Respect in-place overwrite
         if (save_as == ":in:") save_as = file;
@@ -338,11 +312,9 @@ Examples:
         &&  file != "-";
 
         // retrieve offset like this so we can detect if the user typed -o 0 by accident
-        long raw_offset = result.count("offset")
-                    ? result["offset"].as<long>()
-                    : LONG_MIN;   // your sentinel
-        bool offset_provided = raw_offset != LONG_MIN;
-        long offset = offset_provided ? raw_offset : 0;
+        o.overrideoffset = result.count("offset") 
+                       ? std::make_optional(result["offset"].as<long>()) 
+                       : std::nullopt;
 
         // Return if file doesn't even exist 
         // AND if the user didn't meant that it's a file (like reading stdin)
@@ -358,36 +330,27 @@ Examples:
 
         // Treat file as...
         if (treat_as_audio) {
+            o.dropmetadata = true; // always drop metadata when dealing with audio files
             return handle_audio_file_directly(
                 file,
                 save_as,
-                offset,
-                offset_provided,
-                invert,
-                unwrap,
+                o,
                 // by default, just take whatever the audio metadata has
                 (link_lrc.empty() ? get_audio_lyrics(file) : 
                     // else, process the external .lrc instead first
                     process_lyrics(
                         link_lrc,
-                        parse_options(offset, invert, 
-                        true, // always drop metadata when dealing with audio files
-                        unwrap
+                        o
                         )
                     )
-                )
-            );
+                );
         } else {
             if (!link_lrc.empty())
                 std::cout << "warning: both input files are .lrc, ignoring link-lrc input..." << std::endl;
             return handle_lrc_file_directly(
                 file,
                 save_as,
-                offset,
-                offset_provided,
-                invert,
-                unwrap,
-                dropmetadata
+                o
             );
         }
 

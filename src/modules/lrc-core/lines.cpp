@@ -54,9 +54,9 @@ correct_line_offset (const std::string &source, const long offset, bool invert_d
     std::string output_line;
 
     for (timestamp &ts : timestamps_in_this_line) {
-            output_line += ts
+            output_line += "[" + ts
                 .apply_offset(offset, invert_direction)
-                .as_string();
+                .as_string() + "]";
     }
     
     output_line += " " + trim_string(strip_timestamps(source));
