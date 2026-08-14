@@ -39,7 +39,7 @@ class timestamp {
         timestamp(std::string source, bool disable_warning = false);
         timestamp(std::string_view source, bool disable_warning = false);
 
-        long
+        int64_t
         as_ms() const;
 
         std::string
