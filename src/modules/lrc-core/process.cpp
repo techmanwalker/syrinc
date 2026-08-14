@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -141,18 +142,37 @@ process_lyrics (const filelines lyrics, options o)
             processed_line = correct_line_offset(processed_line, offset, o.invertoffset);
         }
 
-        if (o.unwrap) {
-            std::vector<timestamp> timestamps_of_line = line_timestamps(processed_line);
+        // sort timestamps in this line prior pushing back
+        std::vector<timestamp> timestamps_of_line = line_timestamps(processed_line);
+        std::string stripped_line = trim_string(strip_timestamps(processed_line));
 
+        // sort timestamps in place in ascending order
+        std::sort(timestamps_of_line.begin(), timestamps_of_line.end(), [](const timestamp &a, const timestamp &b) {
+            return a.as_ms() < b.as_ms();
+        });
+
+        if (o.unwrap) {
             // duplicate as many timestamps it has
             for (const timestamp &ts : timestamps_of_line) {
-                out.push_back("[" + ts.as_string() + "] " + trim_string(strip_timestamps(processed_line)));
+                out.push_back("[" + ts.as_string() + "] " + stripped_line);
             }
         } else {
+            std::string stringified_sorted_timestamps = "";
+
+            for (const timestamp &ts : timestamps_of_line) {
+                stringified_sorted_timestamps += "[" + ts.as_string() + "]";
+            }
+
             // Paste back the line before without duplicating for 1:1 timestamp compliance
-            out.push_back(processed_line);
+            out.push_back(stringified_sorted_timestamps + " " + stripped_line);
         }
     }
+
+    // sort lyrics sequence in ascending order
+    std::sort(out.begin(), out.end(), [](const std::string &a, const std::string &b) {
+        // timestamps already sorted in line on the for loop
+        return line_timestamps(a)[0].as_ms() < line_timestamps(b)[0].as_ms();
+    });
 
     return out;
 }
