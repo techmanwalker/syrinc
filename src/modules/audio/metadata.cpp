@@ -18,6 +18,33 @@ namespace audio {
 
 using namespace syrinc::tokens;
 
+namespace {
+
+struct format_ctx_closer {
+    void operator()(AVFormatContext *ctx) const { avformat_close_input(&ctx); }
+};
+using format_ctx_ptr = std::unique_ptr<AVFormatContext, format_ctx_closer>;
+
+// Case-insensitive prefix match on "lyrics" (LYRICS, lyrics, lyrics-eng, ...).
+// Container tags first (FLAC, MP3, M4A, MKV...), then per-stream tags (Ogg: Opus, Vorbis).
+const char *
+find_lyrics_value (const AVFormatContext *fmt)
+{
+    constexpr int flags = AV_DICT_IGNORE_SUFFIX;
+
+    if (const auto *e = av_dict_get(fmt->metadata, "lyrics", nullptr, flags))
+        return e->value;
+
+    for (unsigned i = 0; i < fmt->nb_streams; ++i) {
+        if (const auto *e = av_dict_get(fmt->streams[i]->metadata, "lyrics", nullptr, flags))
+            return e->value;
+    }
+
+    return nullptr;
+}
+
+} // namespace
+
 /**
 * @brief Get song lyrics from the LYRICS file metadata field.
 *
@@ -31,21 +58,24 @@ filelines
 get_audio_lyrics(const fs::path url)
 {
     filelines feed;
-    AVFormatContext *fmt = nullptr;
 
-    // 1. Open file/container
-    if (avformat_open_input(&fmt, url.c_str(), nullptr, nullptr) < 0)
+    // 1. Open file/container. The explicit "file:" stops names like "a:b.opus"
+    //    from being parsed as protocol URLs.
+    const std::string uri = "file:" + url.string();
+    AVFormatContext *raw_fmt = nullptr;
+    if (avformat_open_input(&raw_fmt, uri.c_str(), nullptr, nullptr) < 0)
         return feed;                       // silent: there are no lyrics
+    const format_ctx_ptr fmt(raw_fmt);     // closed on every exit path
 
     // 2. read header
-    avformat_find_stream_info(fmt, nullptr);
+    avformat_find_stream_info(fmt.get(), nullptr);
 
     // 3. Get metadata dictionary
-    AVDictionaryEntry *e = av_dict_get(fmt->metadata, "LYRICS", nullptr, 0);
-    if (e && e->value) {
+    const char *value = find_lyrics_value(fmt.get());
+    if (value) {
         // FFmpeg give us the WHOLE lrc block in a single string
         // Slice by line jump \n
-        std::string_view lyrics(e->value);
+        std::string_view lyrics(value);
         size_t pos = 0;
         while (pos < lyrics.size()) {
             size_t end = lyrics.find('\n', pos);
@@ -55,8 +85,6 @@ get_audio_lyrics(const fs::path url)
         }
     }
 
-    // 4. Clean
-    avformat_close_input(&fmt);
     return feed;
 }
 
