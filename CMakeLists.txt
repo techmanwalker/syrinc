@@ -6,7 +6,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON) # Ensure the compiler supports the specified
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(CXXOPTS REQUIRED cxxopts>=2.0)
 
 # ----- FFmpeg -----
 
@@ -16,9 +15,17 @@ pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET
                   libavcodec>=58.0
                   libavutil>=56.0)
 
-# ---- default BUILD_TESTS to ON when Debug ----
-if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT DEFINED BUILD_TESTS)
-  set(BUILD_TESTS ON CACHE BOOL "Build test executable" FORCE)
+# standalone build vs. consumed as a subproject (e.g. noname/submodules/syrinc)
+set(_syrinc_standalone OFF)
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  set(_syrinc_standalone ON)
+endif()
+
+option(SYRINC_BUILD_CLI "Build the syrinc command line tool" ${_syrinc_standalone})
+if(_syrinc_standalone AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+  option(SYRINC_BUILD_TESTS "Build test executables" ON)
+else()
+  option(SYRINC_BUILD_TESTS "Build test executables" OFF)
 endif()
 
 # this one contains the code to process .lrc files such as
@@ -65,16 +72,20 @@ target_compile_definitions(audio PUBLIC
 set_target_properties(audio PROPERTIES EXPORT_NAME syrinc_audio)
 
 # build the basic cli interface
-add_executable(syrinc
-    src/cli/cli.cpp
-)
-target_link_libraries(syrinc PRIVATE lrc-core audio)
-target_include_directories(syrinc PUBLIC
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/include"
-)
+if(SYRINC_BUILD_CLI)
+  pkg_check_modules(CXXOPTS REQUIRED cxxopts>=2.0)
 
-# only if requested with -DBUILD_TESTS
-if(BUILD_TESTS)
+  add_executable(syrinc
+      src/cli/cli.cpp
+  )
+  target_link_libraries(syrinc PRIVATE lrc-core audio)
+  target_include_directories(syrinc PUBLIC
+      "${CMAKE_CURRENT_SOURCE_DIR}/src/include"
+  )
+endif()
+
+# only if requested with -DSYRINC_BUILD_TESTS
+if(SYRINC_BUILD_TESTS)
   add_executable(test-lrc-core "tests/lrc-core.cpp")
   target_link_libraries(test-lrc-core PRIVATE lrc-core)
   target_include_directories(test-lrc-core PUBLIC
@@ -103,5 +114,7 @@ add_custom_target(uninstall
   COMMAND ${CMAKE_COMMAND} -P
   "${CMAKE_CURRENT_BINARY_DIR}/cmake/uninstall.cmake")
 
-install(TARGETS syrinc
-        RUNTIME DESTINATION ${CMAKE_PREFIX_PATH}/bin)
+if(SYRINC_BUILD_CLI)
+  install(TARGETS syrinc
+          RUNTIME DESTINATION ${CMAKE_PREFIX_PATH}/bin)
+endif()
